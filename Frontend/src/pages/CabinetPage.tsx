@@ -64,19 +64,16 @@ export default function CabinetPage() {
     setLoading(true);
     ordersApi.getAll()
       .then(async (data) => {
-        setOrders(data);
+        setOrders(data || []);
         if (data.length > 0) setSelectedOrder(data[0]);
 
         // Загружаем отзывы для завершённых заказов
         const completed = data.filter(o => ['Готово', 'Выдан'].includes(o.status_name));
         const map: Record<number, Review> = {};
-        await Promise.all(completed.map(async (o) => {
-          try {
-            // Получаем отзыв через историю — проверяем наличие
-            const allReviews = await reviewsApi.getAll();
-            allReviews.reviews.forEach(r => { map[r.order_id] = r; });
-          } catch {}
-        }));
+        try {
+          const allReviews = await reviewsApi.getAll();
+          allReviews.reviews.forEach(r => { map[r.order_id] = r; });
+        } catch {}
         setReviewsMap(map);
       })
       .finally(() => setLoading(false));
@@ -144,8 +141,8 @@ export default function CabinetPage() {
   const isCompleted = (o: Order) => ['Готово', 'Выдан'].includes(o.status_name);
   const formatDate = (d: string) => new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  const activeCount = orders.filter(o => ['Новая','Принята','В процессе','Ожидание запчастей'].includes(o.status_name)).length;
-  const completedCount = orders.filter(o => isCompleted(o)).length;
+  const activeCount = (orders || []).filter(o => ['Новая','Принята','В процессе','Ожидание запчастей'].includes(o.status_name)).length;
+  const completedCount = (orders || []).filter(o => isCompleted(o)).length;
 
   return (
     <div className={styles.page}>

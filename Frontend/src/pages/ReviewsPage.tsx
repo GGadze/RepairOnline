@@ -46,8 +46,8 @@ export default function ReviewsPage() {
   useEffect(() => {
     reviewsApi.getAll()
       .then((data) => {
-        setReviews(data.reviews);
-        setAvgRating(data.avg_rating);
+        setReviews(Array.isArray(data.reviews) ? data.reviews : []);
+        setAvgRating(data.avg_rating || 0);
       })
       .catch(() => setReviews([]))
       .finally(() => setLoading(false));
@@ -64,7 +64,7 @@ export default function ReviewsPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  const sortedReviews = [...reviews].sort((a, b) => {
+  const sortedReviews = [...(reviews || [])].sort((a, b) => {
     if (sortBy === 'date') {
       const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return sortOrder === 'desc' ? -diff : diff;

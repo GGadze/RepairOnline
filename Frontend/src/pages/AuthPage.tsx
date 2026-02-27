@@ -67,7 +67,8 @@ export default function AuthPage() {
     setLoading(true);
     try {
       const data = await authApi.login({ email, password });
-      const payload = JSON.parse(atob(data.token.split('.')[1]));
+      const base64 = data.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
       login(data.user, data.token, payload.role as 'client' | 'admin');
       setSuccess('Успешный вход! Перенаправление...');
       setTimeout(() => { window.scrollTo(0, 0); navigate(from, { replace: true }); }, 1000);
@@ -88,7 +89,8 @@ export default function AuthPage() {
     setLoading(true);
     try {
       const data = await authApi.register({ email, password, first_name: firstName, last_name: lastName, phone });
-      const payload = JSON.parse(atob(data.token.split('.')[1]));
+      const base64 = data.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
       login(data.user, data.token, payload.role as 'client' | 'admin');
       setSuccess('Регистрация успешна! Перенаправление...');
       setTimeout(() => { window.scrollTo(0, 0); navigate(from, { replace: true }); }, 1000);

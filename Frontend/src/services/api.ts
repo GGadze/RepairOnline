@@ -1,100 +1,118 @@
 import axios from 'axios';
-
-// Базовый URL для API (замени на свой, когда бэкенд будет готов)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import type {
+  AuthResponse, RegisterRequest, LoginRequest, User,
+  Category, Order, CreateOrderRequest, UpdateOrderStatusRequest,
+  OrderStatusHistory, TimeSlot, Review, ReviewsResponse,
+  CreateReviewRequest, Photo,
+} from '../types';
 
 const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Интерцептор для добавления токена
+// Добавляем токен к каждому запросу автоматически
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  try {
+    const raw = localStorage.getItem('auth-storage');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.state?.token) {
+        config.headers.Authorization = `Bearer ${parsed.state.token}`;
+      }
+    }
+  } catch {}
   return config;
 });
 
-// API для авторизации
+// =====================
+// AUTH
+// =====================
 export const authApi = {
-  login: (login: string, password: string) => 
-    api.post('/auth/login', { login, password }),
-  register: (userData: any) => 
-    api.post('/auth/register', userData),
-  logout: () => 
-    api.post('/auth/logout'),
-  getProfile: () => 
-    api.get('/auth/profile'),
+  register: (data: RegisterRequest) =>
+    api.post<AuthResponse>('/auth/register', data).then(r => r.data),
+
+  login: (data: LoginRequest) =>
+    api.post<AuthResponse>('/auth/login', data).then(r => r.data),
+
+  me: () =>
+    api.get<User>('/auth/me').then(r => r.data),
 };
 
-// API для заказов
-export const ordersApi = {
-  getAll: (params?: any) => 
-    api.get('/orders', { params }),
-  getById: (id: number) => 
-    api.get(`/orders/${id}`),
-  create: (orderData: any) => 
-    api.post('/orders', orderData),
-  update: (id: number, orderData: any) => 
-    api.put(`/orders/${id}`, orderData),
-  delete: (id: number) => 
-    api.delete(`/orders/${id}`),
-  getHistory: () => 
-    api.get('/orders/history'),
-  addReview: (id: number, reviewData: any) => 
-    api.post(`/orders/${id}/review`, reviewData),
-};
-
-// API для категорий
+// =====================
+// CATEGORIES
+// =====================
 export const categoriesApi = {
-  getAll: () => 
-    api.get('/categories'),
-  getById: (id: number) => 
-    api.get(`/categories/${id}`),
-  getWithServices: () => 
-    api.get('/categories/with-services'),
+  getAll: () =>
+    api.get<Category[]>('/categories').then(r => r.data),
+
+  getById: (id: number) =>
+    api.get<Category>(`/categories/${id}`).then(r => r.data),
+
+  create: (data: { name: string; parent_id?: number | null; level: number; base_price: number }) =>
+    api.post<Category>('/admin/categories', data).then(r => r.data),
+
+  update: (id: number, data: { name: string; parent_id?: number | null; level: number; base_price: number }) =>
+    api.put<Category>(`/admin/categories/${id}`, data).then(r => r.data),
+
+  delete: (id: number) =>
+    api.delete(`/admin/categories/${id}`).then(r => r.data),
 };
 
-// API для услуг
-export const servicesApi = {
-  getAll: (params?: any) => 
-    api.get('/services', { params }),
-  getByCategory: (categoryId: number) => 
-    api.get(`/services/category/${categoryId}`),
+// =====================
+// ORDERS
+// =====================
+export const ordersApi = {
+  create: (data: CreateOrderRequest) =>
+    api.post<Order>('/orders', data).then(r => r.data),
+
+  getAll: (statusId?: number) =>
+    api.get<Order[]>('/orders', { params: statusId ? { status_id: statusId } : {} }).then(r => r.data),
+
+  getById: (id: number) =>
+    api.get<Order>(`/orders/${id}`).then(r => r.data),
+
+  getHistory: (id: number) =>
+    api.get<OrderStatusHistory[]>(`/orders/${id}/history`).then(r => r.data),
+
+  updateStatus: (id: number, data: UpdateOrderStatusRequest) =>
+    api.patch(`/admin/orders/${id}/status`, data).then(r => r.data),
+
+  uploadPhoto: (orderId: number, file: File) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return api.post<Photo>(`/orders/${orderId}/photos`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data);
+  },
+
+  getPhotos: (orderId: number) =>
+    api.get<Photo[]>(`/orders/${orderId}/photos`).then(r => r.data),
 };
 
-// API для отзывов
-export const reviewsApi = {
-  getAll: (params?: any) => 
-    api.get('/reviews', { params }),
-  create: (reviewData: any) => 
-    api.post('/reviews', reviewData),
-  getByOrderId: (orderId: number) => 
-    api.get(`/reviews/order/${orderId}`),
-};
-
-// API для временных слотов
+// =====================
+// TIME SLOTS
+// =====================
 export const slotsApi = {
-  getAvailable: (date: string) => 
-    api.get('/slots/available', { params: { date } }),
-  getByDate: (date: string) => 
-    api.get(`/slots/${date}`),
-  bookSlot: (slotId: number) => 
-    api.post(`/slots/${slotId}/book`),
+  getFreeByDate: (date: string) =>
+    api.get<TimeSlot[]>('/slots', { params: { date } }).then(r => r.data),
+
+  create: (slot_date: string, slot_time: string) =>
+    api.post<TimeSlot>('/admin/slots', { slot_date, slot_time }).then(r => r.data),
+
+  delete: (id: number) =>
+    api.delete(`/admin/slots/${id}`).then(r => r.data),
 };
 
-// API для пользователей
-export const usersApi = {
-  getProfile: () => 
-    api.get('/users/profile'),
-  updateProfile: (userData: any) => 
-    api.put('/users/profile', userData),
-  changePassword: (passwords: any) => 
-    api.post('/users/change-password', passwords),
+// =====================
+// REVIEWS
+// =====================
+export const reviewsApi = {
+  getAll: () =>
+    api.get<ReviewsResponse>('/reviews').then(r => r.data),
+
+  create: (orderId: number, data: CreateReviewRequest) =>
+    api.post<Review>(`/orders/${orderId}/reviews`, data).then(r => r.data),
 };
 
 export default api;

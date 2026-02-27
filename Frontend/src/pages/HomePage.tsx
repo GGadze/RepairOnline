@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from '../components/HomePage.module.css';
+import { useAuthStore } from '../store/authStore';
 
 const topNav = [
   { id: 'main', label: 'Главная' },
@@ -78,23 +79,9 @@ const additionalServices = [
   { id: 4, name: 'Настройка после ремонта', price: 'Бесплатно', desc: 'Полная настройка устройства' },
 ];
 
-const isAuthenticated = () => {
-  return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-};
-
-const getProfileEmoji = () => {
-  const userAvatar = localStorage.getItem('userAvatar') || sessionStorage.getItem('userAvatar');
-  return userAvatar || '👤';
-};
-
-const logout = () => {
-  localStorage.clear();
-  sessionStorage.clear();
-  window.location.reload();
-};
-
 export default function HomePage() {
   const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuthStore();
   const location = useLocation();
   const mindmapRef = useRef<HTMLDivElement>(null);
   const aboutRef = useRef<HTMLDivElement>(null);
@@ -106,7 +93,6 @@ export default function HomePage() {
   const [positions, setPositions] = useState<{ x: number; y: number }[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('Смартфоны');
   const [showPrices, setShowPrices] = useState(true);
-  const [profileEmoji, setProfileEmoji] = useState(getProfileEmoji());
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -213,7 +199,7 @@ export default function HomePage() {
 
   const handleOrderClick = () => {
     window.scrollTo(0, 0);
-    if (isAuthenticated()) {
+    if (isAuthenticated) {
       navigate('/create-order');
     } else {
       navigate('/auth', { state: { from: { pathname: '/create-order' } } });
@@ -222,7 +208,7 @@ export default function HomePage() {
 
   const handleProfileClick = () => {
     window.scrollTo(0, 0);
-    if (isAuthenticated()) {
+    if (isAuthenticated) {
       navigate('/cabinet');
     } else {
       navigate('/auth', { state: { from: { pathname: '/cabinet' } } });
@@ -231,7 +217,6 @@ export default function HomePage() {
 
   const handleLogoutClick = () => {
     logout();
-    setProfileEmoji('👤');
   };
 
   const scrollToPrices = (category: string) => {
@@ -297,14 +282,14 @@ export default function HomePage() {
             </button>
             
             <div className={styles.profileSection}>
-              {isAuthenticated() && (
+              {isAuthenticated && (
                 <button className={styles.logoutTextBtn} onClick={handleLogoutClick}>
                   Выйти
                 </button>
               )}
               <div className={styles.profile} onClick={handleProfileClick}>
-                <span className={isAuthenticated() ? styles.profileEmojiAuth : ''}>
-                  {profileEmoji}
+                <span className={isAuthenticated ? styles.profileEmojiAuth : ''}>
+                  👤
                 </span>
               </div>
             </div>
