@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from '../components/CabinetPage.module.css';
+import { ordersApi, reviewsApi } from '../services/api';
+import { useAuthStore } from '../store/authStore';
+import type { Order, OrderStatusHistory, Review } from '../types';
 
 const topNav = [
   { id: 'main', label: 'Главная' },
@@ -10,136 +13,15 @@ const topNav = [
   { id: 'reviews', label: 'Отзывы' },
 ];
 
-const isAuthenticated = () => {
-  return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-};
-
-const getUserData = () => {
-  return {
-    name: localStorage.getItem('userName') || sessionStorage.getItem('userName') || 'Иванов Иван Иванович',
-    registerDate: localStorage.getItem('userRegisterDate') || sessionStorage.getItem('userRegisterDate') || '15 марта 2024',
-    email: localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail') || 'ivanov@example.com',
-    phone: localStorage.getItem('userPhone') || sessionStorage.getItem('userPhone') || '+7 (999) 123-45-67',
-    avatar: localStorage.getItem('userAvatar') || sessionStorage.getItem('userAvatar') || '👤',
-  };
-};
-
-const getProfileEmoji = () => {
-  const userAvatar = localStorage.getItem('userAvatar') || sessionStorage.getItem('userAvatar');
-  return userAvatar || '👤';
-};
-
-const logout = () => {
-  localStorage.clear();
-  sessionStorage.clear();
-  window.location.href = '/';
-};
-
-// Обновленная история заказов с полем reviewed
-const ordersHistory = [
-  { 
-    id: 1, 
-    name: 'Телефон', 
-    icon: '📱', 
-    status: 'Завершен',
-    reviewed: true,
-    rating: 5,
-    reviewComment: 'Отличный ремонт, всё быстро и качественно!',
-    reviewDate: '15.03.2024',
-    details: {
-      device: 'iPhone 12',
-      problem: 'Разбит экран',
-      master: 'Иванов А.С.',
-      price: 8500,
-      date: '15.03.2024',
-      comment: 'Требуется замена дисплея'
-    }
-  },
-  { 
-    id: 2, 
-    name: 'Микроволновка', 
-    icon: '🔥', 
-    status: 'Завершен',
-    reviewed: false,
-    rating: 0,
-    details: {
-      device: 'Samsung MW350',
-      problem: 'Не греет',
-      master: 'Петров В.В.',
-      price: 5000,
-      date: '14.03.2024',
-      comment: 'Замена магнетрона'
-    }
-  },
-  { 
-    id: 3, 
-    name: 'Утюг', 
-    icon: '👕', 
-    status: 'В ремонте',
-    reviewed: false,
-    rating: 0,
-    details: {
-      device: 'Philips Azur',
-      problem: 'Не включается',
-      master: 'Сидоров К.М.',
-      price: 3000,
-      date: '13.03.2024',
-      comment: 'Диагностика'
-    }
-  },
-  { 
-    id: 4, 
-    name: 'Ноутбук', 
-    icon: '💻', 
-    status: 'Завершен',
-    reviewed: true,
-    rating: 4,
-    reviewComment: 'Хорошо, но долго ждал запчасти',
-    reviewDate: '10.03.2024',
-    details: {
-      device: 'Lenovo IdeaPad',
-      problem: 'Не заряжается',
-      master: 'Иванов А.С.',
-      price: 4500,
-      date: '10.03.2024',
-      comment: 'Заменен разъем питания'
-    }
-  },
-  { 
-    id: 5, 
-    name: 'Планшет', 
-    icon: '📱', 
-    status: 'Завершен',
-    reviewed: false,
-    rating: 0,
-    details: {
-      device: 'iPad Air',
-      problem: 'Треснуло стекло',
-      master: 'Петров В.В.',
-      price: 6000,
-      date: '08.03.2024',
-      comment: 'Замена стекла'
-    }
-  },
-];
-
-const repairStatuses = [
-  { id: 1, name: 'Заказ создан', status: 'created' },
-  { id: 2, name: 'В процессе ремонта', status: 'inProgress' },
-  { id: 3, name: 'Завершен', status: 'completed' },
-];
-
-// Типы для пропсов StarRating
+// Компонент звёздного рейтинга — оставляем как у коллеги
 interface StarRatingProps {
   rating: number;
   onRatingChange?: (rating: number) => void;
   readonly?: boolean;
 }
 
-// Компонент звездного рейтинга
 const StarRating = ({ rating, onRatingChange, readonly = false }: StarRatingProps) => {
   const [hoverRating, setHoverRating] = useState(0);
-
   return (
     <div className={styles.starsContainer}>
       {[1, 2, 3, 4, 5].map(star => (
@@ -149,9 +31,7 @@ const StarRating = ({ rating, onRatingChange, readonly = false }: StarRatingProp
           onClick={() => !readonly && onRatingChange && onRatingChange(star)}
           onMouseEnter={() => !readonly && setHoverRating(star)}
           onMouseLeave={() => !readonly && setHoverRating(0)}
-        >
-          ★
-        </span>
+        >★</span>
       ))}
     </div>
   );
@@ -160,190 +40,133 @@ const StarRating = ({ rating, onRatingChange, readonly = false }: StarRatingProp
 export default function CabinetPage() {
   const navigate = useNavigate();
   const headerRef = useRef<HTMLElement>(null);
-  
-  const [selectedOrder, setSelectedOrder] = useState(ordersHistory[0]);
+  const { user, isAuthenticated, logout } = useAuthStore();
+
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [history, setHistory] = useState<OrderStatusHistory[]>([]);
+  const [reviewsMap, setReviewsMap] = useState<Record<number, Review>>({});
+  const [loading, setLoading] = useState(true);
+
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Модалка отзыва
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewOrder, setReviewOrder] = useState<any>(null);
+  const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState('');
-  const [reviewPhotos, setReviewPhotos] = useState<File[]>([]);
-  const [orders, setOrders] = useState(ordersHistory);
-  
-  const userData = getUserData();
-  const profileEmoji = getProfileEmoji();
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+
+  useEffect(() => {
+    if (!isAuthenticated) { navigate('/auth'); return; }
+    setLoading(true);
+    ordersApi.getAll()
+      .then(async (data) => {
+        setOrders(data);
+        if (data.length > 0) setSelectedOrder(data[0]);
+
+        // Загружаем отзывы для завершённых заказов
+        const completed = data.filter(o => ['Готово', 'Выдан'].includes(o.status_name));
+        const map: Record<number, Review> = {};
+        await Promise.all(completed.map(async (o) => {
+          try {
+            // Получаем отзыв через историю — проверяем наличие
+            const allReviews = await reviewsApi.getAll();
+            allReviews.reviews.forEach(r => { map[r.order_id] = r; });
+          } catch {}
+        }));
+        setReviewsMap(map);
+      })
+      .finally(() => setLoading(false));
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (!selectedOrder) return;
+    ordersApi.getHistory(selectedOrder.id).then(setHistory).catch(() => setHistory([]));
+  }, [selectedOrder]);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
-      if (currentScrollY < lastScrollY) {
-        setShowHeader(true);
-      } 
-      else if (currentScrollY > 100 && currentScrollY > lastScrollY) {
-        setShowHeader(false);
-      }
-      
-      if (currentScrollY < 10) {
-        setShowHeader(true);
-      }
-      
+      if (currentScrollY < lastScrollY || currentScrollY < 10) setShowHeader(true);
+      else if (currentScrollY > 100 && currentScrollY > lastScrollY) setShowHeader(false);
       setLastScrollY(currentScrollY);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      navigate('/auth');
-    }
-  }, [navigate]);
-
   const handleNavClick = (itemId: string) => {
     setShowHeader(true);
-    
-    switch(itemId) {
-      case 'main':
-        navigate('/', { state: { scrollTo: 'main' } });
-        break;
-      case 'about':
-        navigate('/', { state: { scrollTo: 'about' } });
-        break;
-      case 'services':
-        navigate('/', { state: { scrollTo: 'services' } });
-        break;
-      case 'contacts':
-        navigate('/', { state: { scrollTo: 'contacts' } });
-        break;
-      case 'reviews':
-        navigate('/reviews');
-        break;
-      default:
-        break;
+    switch (itemId) {
+      case 'main': navigate('/'); break;
+      case 'about': navigate('/', { state: { scrollTo: 'about' } }); break;
+      case 'services': navigate('/', { state: { scrollTo: 'services' } }); break;
+      case 'contacts': navigate('/', { state: { scrollTo: 'contacts' } }); break;
+      case 'reviews': navigate('/reviews'); break;
     }
   };
 
-  const handleOrderClick = () => {
-    window.scrollTo(0, 0);
-    if (isAuthenticated()) {
-      navigate('/create-order');
-    } else {
-      navigate('/auth', { state: { from: { pathname: '/create-order' } } });
-    }
-  };
-
-  const handleProfileClick = () => {
-    window.scrollTo(0, 0);
-    if (isAuthenticated()) {
-      navigate('/cabinet');
-    } else {
-      navigate('/auth', { state: { from: { pathname: '/cabinet' } } });
-    }
-  };
-
-  const handleLogoutClick = () => {
-    logout();
-  };
-
-  const handleReviewClick = (order: any) => {
+  const handleReviewClick = (order: Order) => {
     setReviewOrder(order);
     setReviewRating(0);
     setReviewComment('');
-    setReviewPhotos([]);
+    setReviewError('');
     setShowReviewModal(true);
   };
 
-  const handleReviewSubmit = () => {
-    if (reviewRating === 0) {
-      alert('Пожалуйста, поставьте оценку');
-      return;
-    }
-
-    // Здесь будет отправка на сервер
-    console.log({
-      orderId: reviewOrder.id,
-      rating: reviewRating,
-      comment: reviewComment,
-      photos: reviewPhotos,
-    });
-
-    // Обновляем локально (для демо)
-    const updatedOrders = orders.map(order => 
-      order.id === reviewOrder.id 
-        ? { 
-            ...order, 
-            reviewed: true, 
-            rating: reviewRating, 
-            reviewComment, 
-            reviewDate: new Date().toLocaleDateString('ru-RU') 
-          }
-        : order
-    );
-    setOrders(updatedOrders);
-
-    setShowReviewModal(false);
-    setReviewOrder(null);
-  };
-
-  const handleReviewPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setReviewPhotos([...reviewPhotos, ...Array.from(e.target.files)]);
+  const handleReviewSubmit = async () => {
+    if (reviewRating === 0) { setReviewError('Пожалуйста, поставьте оценку'); return; }
+    if (!reviewOrder) return;
+    setReviewLoading(true);
+    try {
+      const review = await reviewsApi.create(reviewOrder.id, { rating: reviewRating, comment: reviewComment });
+      setReviewsMap(prev => ({ ...prev, [reviewOrder.id]: review }));
+      setShowReviewModal(false);
+    } catch (e: any) {
+      setReviewError(e.response?.data?.error || 'Ошибка при отправке отзыва');
+    } finally {
+      setReviewLoading(false);
     }
   };
 
-  const getStatusClass = (status: string) => {
-    switch(status) {
-      case 'created': return styles.created;
-      case 'inProgress': return styles.inProgress;
-      case 'completed': return styles.completed;
-      default: return '';
-    }
+  const getOrderStatusClass = (statusName: string) => {
+    const map: Record<string, string> = {
+      'Новая': styles.pending, 'Принята': styles.inProgress,
+      'В процессе': styles.inProgress, 'Ожидание запчастей': styles.pending,
+      'Готово': styles.completed, 'Выдан': styles.completed, 'Отменён': styles.cancelled,
+    };
+    return `${styles.orderStatus} ${map[statusName] || ''}`;
   };
 
-  const getOrderStatusClass = (status: string) => {
-    switch(status) {
-      case 'Ожидает оценки': return `${styles.orderStatus} ${styles.pending}`;
-      case 'В ремонте': return `${styles.orderStatus} ${styles.inProgress}`;
-      case 'Завершен': return `${styles.orderStatus} ${styles.completed}`;
-      default: return styles.orderStatus;
-    }
-  };
+  const isCompleted = (o: Order) => ['Готово', 'Выдан'].includes(o.status_name);
+  const formatDate = (d: string) => new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const activeCount = orders.filter(o => ['Новая','Принята','В процессе','Ожидание запчастей'].includes(o.status_name)).length;
+  const completedCount = orders.filter(o => isCompleted(o)).length;
 
   return (
     <div className={styles.page}>
-      <header 
-        ref={headerRef} 
-        className={`${styles.header} ${showHeader ? styles.visible : ''}`}
-        onMouseEnter={() => setShowHeader(true)}
-      >
+      <header ref={headerRef} className={`${styles.header} ${showHeader ? styles.visible : ''}`}
+        onMouseEnter={() => setShowHeader(true)}>
         <div className={styles.headerContent}>
           <nav className={styles.topNav}>
             {topNav.map(item => (
-              <button 
-                key={item.id} 
-                className={styles.topBtn}
-                onClick={() => handleNavClick(item.id)}
-              >
+              <button key={item.id} className={styles.topBtn} onClick={() => handleNavClick(item.id)}>
                 {item.label}
               </button>
             ))}
-            <button className={styles.orderHeaderBtn} onClick={handleOrderClick}>
+            <button className={styles.orderHeaderBtn} onClick={() => navigate('/create-order')}>
               Оформить заказ
             </button>
-            
             <div className={styles.profileSection}>
-              {isAuthenticated() && (
-                <button className={styles.logoutTextBtn} onClick={handleLogoutClick}>
-                  Выйти
-                </button>
+              {isAuthenticated && (
+                <button className={styles.logoutTextBtn} onClick={() => { logout(); navigate('/'); }}>Выйти</button>
               )}
-              <div className={styles.profile} onClick={handleProfileClick}>
-                <span className={isAuthenticated() ? styles.profileEmojiAuth : ''}>
-                  {profileEmoji}
-                </span>
+              <div className={styles.profile} onClick={() => navigate('/cabinet')}>
+                <span className={styles.profileEmojiAuth}>👤</span>
               </div>
             </div>
           </nav>
@@ -352,7 +175,7 @@ export default function CabinetPage() {
 
       <div className={styles.cabinet}>
         <div className={styles.profileHeader}>
-          <div className={styles.profileAvatar}>{profileEmoji}</div>
+          <div className={styles.profileAvatar}>👤</div>
           <h1 className={styles.profileTitle}>ПРОФИЛЬ</h1>
         </div>
 
@@ -361,19 +184,19 @@ export default function CabinetPage() {
             <h2 className={styles.infoTitle}>Личные данные</h2>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Ф.И.:</span>
-              <span className={styles.infoValue}>{userData.name}</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Дата регистрации:</span>
-              <span className={styles.infoValue}>{userData.registerDate}</span>
+              <span className={styles.infoValue}>{user?.first_name} {user?.last_name}</span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Email:</span>
-              <span className={styles.infoValue}>{userData.email}</span>
+              <span className={styles.infoValue}>{user?.email}</span>
             </div>
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Телефон:</span>
-              <span className={styles.infoValue}>{userData.phone}</span>
+              <span className={styles.infoValue}>{user?.phone}</span>
+            </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>Дата регистрации:</span>
+              <span className={styles.infoValue}>{user?.created_at ? formatDate(user.created_at) : '—'}</span>
             </div>
           </div>
 
@@ -385,128 +208,140 @@ export default function CabinetPage() {
                 <span className={styles.statLabel}>Всего ремонтов</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statNumber}>{orders.filter(o => o.status === 'В ремонте' || o.status === 'Ожидает оценки').length}</span>
+                <span className={styles.statNumber}>{activeCount}</span>
                 <span className={styles.statLabel}>В работе</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statNumber}>{orders.filter(o => o.status === 'Завершен').length}</span>
+                <span className={styles.statNumber}>{completedCount}</span>
                 <span className={styles.statLabel}>Завершено</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className={styles.mainContent}>
-          <div className={styles.leftColumn}>
-            <div className={styles.sectionCard}>
-              <h2 className={styles.sectionTitle}>История заказов</h2>
-              <ul className={styles.ordersList}>
-                {orders.map(order => (
-                  <li 
-                    key={order.id} 
-                    className={`${styles.orderItem} ${selectedOrder.id === order.id ? styles.selected : ''}`}
-                    onClick={() => setSelectedOrder(order)}
-                  >
-                    <div className={styles.orderInfo}>
-                      <span className={styles.orderName}>
-                        <span className={styles.orderIcon}>{order.icon}</span>
-                        {order.name}
-                      </span>
-                      <span className={getOrderStatusClass(order.status)}>
-                        {order.status}
-                      </span>
-                    </div>
-                    {order.status === 'Завершен' && (
-                      <div className={styles.orderReview}>
-                        {order.reviewed ? (
-                          <div className={styles.reviewStars}>
-                            <StarRating rating={order.rating || 0} readonly={true} />
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>Загрузка заказов...</div>
+        ) : (
+          <div className={styles.mainContent}>
+            <div className={styles.leftColumn}>
+              <div className={styles.sectionCard}>
+                <h2 className={styles.sectionTitle}>История заказов</h2>
+                {orders.length === 0 ? (
+                  <p style={{ padding: '1rem', color: '#888' }}>У вас пока нет заказов</p>
+                ) : (
+                  <ul className={styles.ordersList}>
+                    {orders.map(order => (
+                      <li key={order.id}
+                        className={`${styles.orderItem} ${selectedOrder?.id === order.id ? styles.selected : ''}`}
+                        onClick={() => setSelectedOrder(order)}
+                      >
+                        <div className={styles.orderInfo}>
+                          <span className={styles.orderName}>
+                            <span className={styles.orderIcon}>🔧</span>
+                            {order.category_name || order.custom_device_name || 'Устройство'}
+                          </span>
+                          <span className={getOrderStatusClass(order.status_name)}
+                            style={{ color: order.color_code, borderColor: order.color_code }}>
+                            {order.status_name}
+                          </span>
+                        </div>
+                        {isCompleted(order) && (
+                          <div className={styles.orderReview}>
+                            {reviewsMap[order.id] ? (
+                              <div className={styles.reviewStars}>
+                                <StarRating rating={reviewsMap[order.id].rating} readonly />
+                              </div>
+                            ) : (
+                              <button className={styles.reviewBtn}
+                                onClick={(e) => { e.stopPropagation(); handleReviewClick(order); }}>
+                                Оцените ремонт
+                              </button>
+                            )}
                           </div>
-                        ) : (
-                          <button 
-                            className={styles.reviewBtn}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReviewClick(order);
-                            }}
-                          >
-                            Оцените ремонт
-                          </button>
                         )}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className={styles.rightColumn}>
-            <div className={styles.sectionCard}>
-              <h2 className={styles.sectionTitle}>Детали заказа</h2>
-              <div className={styles.orderDetails}>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Устройство:</span>
-                  <span className={styles.detailValue}>{selectedOrder.details.device}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Проблема:</span>
-                  <span className={styles.detailValue}>{selectedOrder.details.problem}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Мастер:</span>
-                  <span className={styles.detailValue}>{selectedOrder.details.master}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Стоимость:</span>
-                  <span className={styles.detailPrice}>{selectedOrder.details.price} ₽</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Дата:</span>
-                  <span className={styles.detailValue}>{selectedOrder.details.date}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Комментарий:</span>
-                  <span className={styles.detailComment}>{selectedOrder.details.comment}</span>
-                </div>
-                {selectedOrder.reviewed && (
-                  <div className={styles.detailRow}>
-                    <span className={styles.detailLabel}>Ваш отзыв:</span>
-                    <div className={styles.detailReview}>
-                      <StarRating rating={selectedOrder.rating || 0} readonly={true} />
-                      <p className={styles.reviewText}>{selectedOrder.reviewComment}</p>
-                      <span className={styles.reviewDate}>{selectedOrder.reviewDate}</span>
-                    </div>
-                  </div>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </div>
 
-            <div className={styles.sectionCard}>
-              <h2 className={styles.sectionTitle}>Статус ремонта</h2>
-              <div className={styles.statusList}>
-                {repairStatuses.map(status => (
-                  <div 
-                    key={status.id} 
-                    className={`${styles.statusItem} ${getStatusClass(status.status)}`}
-                  >
-                    <div className={styles.statusDot} />
-                    <span className={styles.statusText}>{status.name}</span>
+            <div className={styles.rightColumn}>
+              {selectedOrder && (
+                <>
+                  <div className={styles.sectionCard}>
+                    <h2 className={styles.sectionTitle}>Детали заказа #{selectedOrder.id}</h2>
+                    <div className={styles.orderDetails}>
+                      <div className={styles.detailRow}>
+                        <span className={styles.detailLabel}>Устройство:</span>
+                        <span className={styles.detailValue}>
+                          {selectedOrder.category_name || selectedOrder.custom_device_name || '—'}
+                        </span>
+                      </div>
+                      <div className={styles.detailRow}>
+                        <span className={styles.detailLabel}>Проблема:</span>
+                        <span className={styles.detailValue}>{selectedOrder.problem_description}</span>
+                      </div>
+                      <div className={styles.detailRow}>
+                        <span className={styles.detailLabel}>Дата визита:</span>
+                        <span className={styles.detailValue}>
+                          {selectedOrder.appointment_date} в {selectedOrder.appointment_time}
+                        </span>
+                      </div>
+                      <div className={styles.detailRow}>
+                        <span className={styles.detailLabel}>Стоимость:</span>
+                        <span className={styles.detailPrice}>
+                          {selectedOrder.final_price ? `${selectedOrder.final_price} ₽` : 'Уточняется'}
+                        </span>
+                      </div>
+                      {reviewsMap[selectedOrder.id] && (
+                        <div className={styles.detailRow}>
+                          <span className={styles.detailLabel}>Ваш отзыв:</span>
+                          <div className={styles.detailReview}>
+                            <StarRating rating={reviewsMap[selectedOrder.id].rating} readonly />
+                            <p className={styles.reviewText}>{reviewsMap[selectedOrder.id].comment}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>
+
+                  <div className={styles.sectionCard}>
+                    <h2 className={styles.sectionTitle}>История статусов</h2>
+                    <div className={styles.statusList}>
+                      {history.length === 0 ? (
+                        <p style={{ color: '#888' }}>Нет данных</p>
+                      ) : (
+                        history.map((h) => (
+                          <div key={h.id} className={styles.statusItem}>
+                            <div className={styles.statusDot} />
+                            <div>
+                              <span className={styles.statusText}>{h.status_name}</span>
+                              <span style={{ fontSize: '0.75rem', color: '#888', marginLeft: '0.5rem' }}>
+                                {new Date(h.changed_at).toLocaleString('ru-RU')}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Модальное окно для отзыва */}
+      {/* Модальное окно отзыва */}
       {showReviewModal && (
         <div className={styles.modalOverlay} onClick={() => setShowReviewModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <h2 className={styles.modalTitle}>Оцените ремонт</h2>
-            <p className={styles.modalSubtitle}>{reviewOrder?.name} - {reviewOrder?.details.device}</p>
-            
+            <p className={styles.modalSubtitle}>
+              {reviewOrder?.category_name || reviewOrder?.custom_device_name || 'Устройство'}
+            </p>
+
             <div className={styles.modalRating}>
               <span className={styles.ratingLabel}>Ваша оценка:</span>
               <StarRating rating={reviewRating} onRatingChange={setReviewRating} />
@@ -514,50 +349,17 @@ export default function CabinetPage() {
 
             <div className={styles.modalComment}>
               <label className={styles.commentLabel}>Комментарий (необязательно)</label>
-              <textarea
-                className={styles.commentInput}
-                rows={4}
-                value={reviewComment}
+              <textarea className={styles.commentInput} rows={4} value={reviewComment}
                 onChange={(e) => setReviewComment(e.target.value)}
-                placeholder="Расскажите о качестве ремонта..."
-              />
+                placeholder="Расскажите о качестве ремонта..." />
             </div>
 
-            <div className={styles.modalPhoto}>
-              <label className={styles.photoLabel}>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleReviewPhotoUpload}
-                  style={{ display: 'none' }}
-                />
-                <span className={styles.photoBtn}>📷 Прикрепить фото</span>
-              </label>
-              
-              {reviewPhotos.length > 0 && (
-                <div className={styles.photoList}>
-                  {reviewPhotos.map((photo, index) => (
-                    <div key={index} className={styles.photoItem}>
-                      <span>📸 {photo.name}</span>
-                      <button
-                        className={styles.removePhoto}
-                        onClick={() => setReviewPhotos(reviewPhotos.filter((_, i) => i !== index))}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            {reviewError && <div style={{ color: 'red', marginBottom: '0.5rem' }}>{reviewError}</div>}
 
             <div className={styles.modalButtons}>
-              <button className={styles.cancelBtn} onClick={() => setShowReviewModal(false)}>
-                Отмена
-              </button>
-              <button className={styles.submitReviewBtn} onClick={handleReviewSubmit}>
-                Отправить отзыв
+              <button className={styles.cancelBtn} onClick={() => setShowReviewModal(false)}>Отмена</button>
+              <button className={styles.submitReviewBtn} onClick={handleReviewSubmit} disabled={reviewLoading}>
+                {reviewLoading ? 'Отправка...' : 'Отправить отзыв'}
               </button>
             </div>
           </div>
