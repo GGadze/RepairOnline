@@ -1,0 +1,21 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  font-family: "Montserrat", sans-serif;
+  background: #e6f2ff;          /* твой светло-голубой фон */
+  color: #000;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Если используешь Google Fonts для Montserrat */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
