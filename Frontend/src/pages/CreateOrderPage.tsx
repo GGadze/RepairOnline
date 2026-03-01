@@ -112,7 +112,7 @@ export default function CreateOrderPage() {
   useEffect(() => {
     if (!selectedDate) return;
     setSelectedTime('');
-    slotsApi.getFreeByDate(selectedDate).then(setFreeSlots).catch(() => setFreeSlots([]));
+    slotsApi.getFreeByDate(selectedDate).then(data => setFreeSlots(data || [])).catch(() => setFreeSlots([]));
   }, [selectedDate]);
 
   const handleNavClick = (itemId: string) => {
