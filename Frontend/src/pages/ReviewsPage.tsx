@@ -30,6 +30,8 @@ export default function ReviewsPage() {
   const reviewsRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, logout } = useAuthStore();
 
+  const avatar = localStorage.getItem('user-avatar') || '👤';
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [avgRating, setAvgRating] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -118,7 +120,7 @@ export default function ReviewsPage() {
                 <button className={styles.logoutTextBtn} onClick={() => { logout(); navigate('/'); }}>Выйти</button>
               )}
               <div className={styles.profile} onClick={() => navigate(isAuthenticated ? '/cabinet' : '/auth')}>
-                <span className={isAuthenticated ? styles.profileEmojiAuth : ''}>👤</span>
+                <span className={isAuthenticated ? styles.profileEmojiAuth : ''}>{isAuthenticated ? avatar : '👤'}</span>
               </div>
             </div>
           </nav>
@@ -132,10 +134,12 @@ export default function ReviewsPage() {
           {/* Средний рейтинг */}
           {avgRating > 0 && (
             <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-              <StarRating rating={Math.round(avgRating)} />
-              <span style={{ marginLeft: '0.5rem', color: '#888' }}>
-                {avgRating.toFixed(1)} из 5 ({reviews.length} отзывов)
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
+                <StarRating rating={Math.round(avgRating)} />
+                <span style={{ color: '#888' }}>
+                  {avgRating.toFixed(1)} из 5 ({reviews.length} отзывов)
+                </span>
+              </div>
             </div>
           )}
 

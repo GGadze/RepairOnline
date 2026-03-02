@@ -78,7 +78,8 @@ func (r *OrderRepository) CreateWithSlot(order *models.Order) error {
 
 func (r *OrderRepository) ListAll(statusID int) ([]models.Order, error) {
 	query := `
-		SELECT o.*,
+		SELECT DISTINCT ON (o.id)
+		       o.*,
 		       s.name AS status_name, s.color_code,
 		       u.first_name || ' ' || u.last_name AS user_name,
 		       c.name AS category_name
@@ -86,28 +87,27 @@ func (r *OrderRepository) ListAll(statusID int) ([]models.Order, error) {
 		JOIN users u ON u.id = o.user_id
 		LEFT JOIN categories c ON c.id = o.category_id
 		LEFT JOIN order_status_history osh ON osh.order_id = o.id
-		LEFT JOIN statuses s ON s.id = osh.status_id
-		WHERE osh.id = (
-			SELECT id FROM order_status_history
-			WHERE order_id = o.id ORDER BY changed_at DESC LIMIT 1
-		)`
+		LEFT JOIN statuses s ON s.id = osh.status_id`
 
-	var args []interface{}
 	if statusID > 0 {
-		query += ` AND osh.status_id = $1`
-		args = append(args, statusID)
+		query += ` WHERE osh.status_id = $1`
+		query += ` ORDER BY o.id, osh.changed_at DESC NULLS LAST`
+		var orders []models.Order
+		err := r.db.Select(&orders, query, statusID)
+		return orders, err
 	}
-	query += ` ORDER BY o.created_at DESC`
 
+	query += ` ORDER BY o.id, osh.changed_at DESC NULLS LAST`
 	var orders []models.Order
-	err := r.db.Select(&orders, query, args...)
+	err := r.db.Select(&orders, query)
 	return orders, err
 }
 
 func (r *OrderRepository) ListByUser(userID int) ([]models.Order, error) {
 	var orders []models.Order
 	err := r.db.Select(&orders, `
-		SELECT o.*,
+		SELECT DISTINCT ON (o.id)
+		       o.*,
 		       s.name AS status_name, s.color_code,
 		       c.name AS category_name
 		FROM orders o
@@ -115,11 +115,7 @@ func (r *OrderRepository) ListByUser(userID int) ([]models.Order, error) {
 		LEFT JOIN order_status_history osh ON osh.order_id = o.id
 		LEFT JOIN statuses s ON s.id = osh.status_id
 		WHERE o.user_id = $1
-		  AND osh.id = (
-			SELECT id FROM order_status_history
-			WHERE order_id = o.id ORDER BY changed_at DESC LIMIT 1
-		)
-		ORDER BY o.created_at DESC`,
+		ORDER BY o.id, osh.changed_at DESC NULLS LAST`,
 		userID,
 	)
 	return orders, err
@@ -128,7 +124,8 @@ func (r *OrderRepository) ListByUser(userID int) ([]models.Order, error) {
 func (r *OrderRepository) GetByID(id int) (*models.Order, error) {
 	order := &models.Order{}
 	err := r.db.Get(order, `
-		SELECT o.*,
+		SELECT DISTINCT ON (o.id)
+		       o.*,
 		       s.name AS status_name, s.color_code,
 		       u.first_name || ' ' || u.last_name AS user_name,
 		       c.name AS category_name
@@ -138,10 +135,7 @@ func (r *OrderRepository) GetByID(id int) (*models.Order, error) {
 		LEFT JOIN order_status_history osh ON osh.order_id = o.id
 		LEFT JOIN statuses s ON s.id = osh.status_id
 		WHERE o.id = $1
-		  AND osh.id = (
-			SELECT id FROM order_status_history
-			WHERE order_id = o.id ORDER BY changed_at DESC LIMIT 1
-		)`,
+		ORDER BY o.id, osh.changed_at DESC NULLS LAST`,
 		id,
 	)
 	return order, err

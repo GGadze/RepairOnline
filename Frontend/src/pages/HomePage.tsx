@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from '../components/HomePage.module.css';
 import { useAuthStore } from '../store/authStore';
-
+const avatar = localStorage.getItem('user-avatar') || '👤';
 const topNav = [
   { id: 'main', label: 'Главная' },
   { id: 'about', label: 'О себе' },
@@ -73,7 +73,7 @@ const advantages = [
 ];
 
 const additionalServices = [
-  { id: 1, name: 'Срочный ремонт', price: '+30%', desc: 'За 1 час' },
+  { id: 1, name: 'Срочный ремонт', price: '+20%', desc: 'За 1 час' },
   { id: 2, name: 'Выезд мастера', price: '500 ₽', desc: 'На дом или в офис' },
   { id: 3, name: 'Резервное копирование', price: '1000 ₽', desc: 'Сохранение данных' },
   { id: 4, name: 'Настройка после ремонта', price: 'Бесплатно', desc: 'Полная настройка устройства' },
@@ -288,9 +288,7 @@ export default function HomePage() {
                 </button>
               )}
               <div className={styles.profile} onClick={handleProfileClick}>
-                <span className={isAuthenticated ? styles.profileEmojiAuth : ''}>
-                  👤
-                </span>
+                <span className={isAuthenticated ? styles.profileEmojiAuth : ''}>{isAuthenticated ? avatar : '👤'}</span>
               </div>
             </div>
           </nav>
@@ -441,33 +439,37 @@ export default function HomePage() {
         <h2 className={styles.sectionTitle}>МЫ НА КАРТЕ</h2>
         <div className={styles.mapContainer}>
           <iframe
-            src="https://yandex.ru/map-widget/v1/?um=constructor%3A1a2b3c4d5e6f7g8h9i0j&source=constructor"
+            src="https://yandex.ru/map-widget/v1/?ll=55.101%2C51.831&z=16&pt=55.101%2C51.831%2Cpm2rdm~55.101%2C51.831%2C%D0%A0%D0%B5%D0%BC%D0%BE%D0%BD%D1%82-%D0%9E%D0%BD%D0%BB%D0%B0%D0%B9%D0%BD&l=map"
             width="100%"
             height="400"
             frameBorder="0"
-            title="Яндекс Карта"
+            title="Яндекс Карта — п. Нижнесакмарский, ул. Бастионная, 48"
             className={styles.map}
+            allowFullScreen
           ></iframe>
         </div>
         <div className={styles.contacts}>
           <div className={styles.contactItem}>
             <span className={styles.contactIcon}>📍</span>
-            <span>г. Краснодар, ул. Красная, 123</span>
+            <span>п. Нижнесакмарский, ул. Бастионная, 48</span>
           </div>
           <div className={styles.contactItem}>
             <span className={styles.contactIcon}>📞</span>
-            <span>+7 (861) 123-45-67</span>
+            <span>+7 (987) 773-24-64</span>
           </div>
           <div className={styles.contactItem}>
             <span className={styles.contactIcon}>✉️</span>
-            <span>info@remont-online.ru</span>
+            <span>remont-online@mail.ru</span>
           </div>
           <div className={styles.contactItem}>
             <span className={styles.contactIcon}>🕒</span>
-            <span>Ежедневно с 10:00 до 20:00</span>
+            <span>Ежедневно с 9:00 до 20:00</span>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+
+

@@ -59,23 +59,23 @@ type Status struct {
 // --- Orders ---
 
 type Order struct {
-	ID                 int        `db:"id" json:"id"`
-	UserID             int        `db:"user_id" json:"user_id"`
-	CategoryID         *int       `db:"category_id" json:"category_id"`
-	CustomDeviceName   *string    `db:"custom_device_name" json:"custom_device_name"`
-	ProblemDescription string     `db:"problem_description" json:"problem_description"`
-	FinalPrice         *float64   `db:"final_price" json:"final_price"`
-	AppointmentDate    string     `db:"appointment_date" json:"appointment_date"`
-	AppointmentTime    string     `db:"appointment_time" json:"appointment_time"`
-	IsCustomDevice     bool       `db:"is_custom_device" json:"is_custom_device"`
-	CreatedAt          time.Time  `db:"created_at" json:"created_at"`
-	UpdatedAt          time.Time  `db:"updated_at" json:"updated_at"`
+	ID                 int       `db:"id" json:"id"`
+	UserID             int       `db:"user_id" json:"user_id"`
+	CategoryID         *int      `db:"category_id" json:"category_id"`
+	CustomDeviceName   *string   `db:"custom_device_name" json:"custom_device_name"`
+	ProblemDescription string    `db:"problem_description" json:"problem_description"`
+	FinalPrice         *float64  `db:"final_price" json:"final_price"`
+	AppointmentDate    string    `db:"appointment_date" json:"appointment_date"`
+	AppointmentTime    string    `db:"appointment_time" json:"appointment_time"`
+	IsCustomDevice     bool      `db:"is_custom_device" json:"is_custom_device"`
+	CreatedAt          time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt          time.Time `db:"updated_at" json:"updated_at"`
 
-	// Joined fields (not stored in DB)
-	StatusName  string  `db:"status_name" json:"status_name,omitempty"`
-	ColorCode   string  `db:"color_code" json:"color_code,omitempty"`
-	UserName    string  `db:"user_name" json:"user_name,omitempty"`
-	CategoryName string `db:"category_name" json:"category_name,omitempty"`
+	// Joined fields — *string чтобы принимать NULL из LEFT JOIN
+	StatusName   *string `db:"status_name" json:"status_name,omitempty"`
+	ColorCode    *string `db:"color_code" json:"color_code,omitempty"`
+	UserName     *string `db:"user_name" json:"user_name,omitempty"`
+	CategoryName *string `db:"category_name" json:"category_name,omitempty"`
 }
 
 // --- TimeSlots ---
@@ -110,7 +110,7 @@ type Review struct {
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 
 	// Joined fields
-	UserName string `db:"user_name" json:"user_name,omitempty"`
+	UserName *string `db:"user_name" json:"user_name,omitempty"`
 }
 
 // --- OrderStatusHistory ---
@@ -123,8 +123,8 @@ type OrderStatusHistory struct {
 	ChangedAt time.Time `db:"changed_at" json:"changed_at"`
 
 	// Joined fields
-	StatusName string `db:"status_name" json:"status_name,omitempty"`
-	ChangedByName string `db:"changed_by_name" json:"changed_by_name,omitempty"`
+	StatusName    *string `db:"status_name" json:"status_name,omitempty"`
+	ChangedByName *string `db:"changed_by_name" json:"changed_by_name,omitempty"`
 }
 
 // --- DTO (Data Transfer Objects) ---
@@ -167,10 +167,10 @@ type CreateReviewRequest struct {
 }
 
 type CreateCategoryRequest struct {
-	Name      string   `json:"name" validate:"required"`
-	ParentID  *int     `json:"parent_id"`
-	Level     int      `json:"level"`
-	BasePrice float64  `json:"base_price"`
+	Name      string  `json:"name" validate:"required"`
+	ParentID  *int    `json:"parent_id"`
+	Level     int     `json:"level"`
+	BasePrice float64 `json:"base_price"`
 }
 
 type CreateSlotRequest struct {

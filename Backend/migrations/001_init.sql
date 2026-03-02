@@ -50,17 +50,6 @@ CREATE TABLE IF NOT EXISTS statuses (
     color_code  VARCHAR(7)
 );
 
--- Временные слоты для бронирования
-CREATE TABLE IF NOT EXISTS time_slots (
-    id         SERIAL PRIMARY KEY,
-    slot_date  DATE      NOT NULL,
-    slot_time  TIME      NOT NULL,
-    is_booked  BOOLEAN   NOT NULL DEFAULT FALSE,
-    order_id   INT       UNIQUE REFERENCES orders(id) ON DELETE SET NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    UNIQUE(slot_date, slot_time)
-);
-
 -- Заказы (центральная таблица)
 CREATE TABLE IF NOT EXISTS orders (
     id                  SERIAL PRIMARY KEY,
@@ -74,6 +63,17 @@ CREATE TABLE IF NOT EXISTS orders (
     is_custom_device    BOOLEAN        NOT NULL DEFAULT FALSE,
     created_at          TIMESTAMP      NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMP      NOT NULL DEFAULT NOW()
+);
+
+-- Временные слоты для бронирования
+CREATE TABLE IF NOT EXISTS time_slots (
+    id         SERIAL PRIMARY KEY,
+    slot_date  DATE      NOT NULL,
+    slot_time  TIME      NOT NULL,
+    is_booked  BOOLEAN   NOT NULL DEFAULT FALSE,
+    order_id   INT       UNIQUE REFERENCES orders(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE(slot_date, slot_time)
 );
 
 -- История изменений статусов

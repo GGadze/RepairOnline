@@ -37,6 +37,8 @@ const StarRating = ({ rating, onRatingChange, readonly = false }: StarRatingProp
   );
 };
 
+const AVATAR_EMOJIS = ['👤','😊','😎','🤓','👩‍💻','👨‍💻','🧑‍🔧','👩‍🔧','🦸','🧑‍🎓','😺','🐶','🦊','🐼','🦁','🌟','🎮','🎯','🔧','⚡'];
+
 export default function CabinetPage() {
   const navigate = useNavigate();
   const headerRef = useRef<HTMLElement>(null);
@@ -50,6 +52,18 @@ export default function CabinetPage() {
 
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Аватар
+  const [selectedAvatar, setSelectedAvatar] = useState(() => {
+    return localStorage.getItem('user-avatar') || '👤';
+  });
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+
+  const handleAvatarSelect = (emoji: string) => {
+    setSelectedAvatar(emoji);
+    localStorage.setItem('user-avatar', emoji);
+    setShowAvatarPicker(false);
+  };
 
   // Модалка отзыва
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -72,7 +86,7 @@ export default function CabinetPage() {
         const map: Record<number, Review> = {};
         try {
           const allReviews = await reviewsApi.getAll();
-          allReviews.reviews.forEach(r => { map[r.order_id] = r; });
+          allReviews.reviews.forEach((r: Review) => { map[r.order_id] = r; });
         } catch {}
         setReviewsMap(map);
       })
@@ -163,7 +177,7 @@ export default function CabinetPage() {
                 <button className={styles.logoutTextBtn} onClick={() => { logout(); navigate('/'); }}>Выйти</button>
               )}
               <div className={styles.profile} onClick={() => navigate('/cabinet')}>
-                <span className={styles.profileEmojiAuth}>👤</span>
+                <span className={styles.profileEmojiAuth}>{selectedAvatar}</span>
               </div>
             </div>
           </nav>
@@ -172,7 +186,29 @@ export default function CabinetPage() {
 
       <div className={styles.cabinet}>
         <div className={styles.profileHeader}>
-          <div className={styles.profileAvatar}>👤</div>
+          <div
+            className={styles.profileAvatar}
+            onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+            style={{ cursor: 'pointer', position: 'relative' }}
+            title="Нажмите для смены аватара"
+          >
+            {selectedAvatar}
+            <span style={{ position: 'absolute', bottom: 0, right: 0, fontSize: '0.8rem', background: '#3b82f6', borderRadius: '50%', width: '1.2rem', height: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', lineHeight: 1 }}>✏️</span>
+          </div>
+          {showAvatarPicker && (
+            <div style={{ position: 'absolute', top: '120px', left: '2rem', background: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 10px 30px rgba(59,130,246,0.3)', border: '2px solid #93c5fd', zIndex: 100, display: 'flex', flexWrap: 'wrap', gap: '0.5rem', maxWidth: '320px' }}>
+              <div style={{ width: '100%', fontWeight: 700, color: '#1e3a8a', marginBottom: '0.3rem', fontSize: '0.9rem' }}>Выберите аватар:</div>
+              {AVATAR_EMOJIS.map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={() => handleAvatarSelect(emoji)}
+                  style={{ fontSize: '1.8rem', background: selectedAvatar === emoji ? '#dbeafe' : 'transparent', border: selectedAvatar === emoji ? '2px solid #3b82f6' : '2px solid transparent', borderRadius: '0.5rem', cursor: 'pointer', padding: '0.2rem', transition: 'all 0.2s' }}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
           <h1 className={styles.profileTitle}>ПРОФИЛЬ</h1>
         </div>
 
