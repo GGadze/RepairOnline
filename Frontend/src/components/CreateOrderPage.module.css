@@ -1,422 +1,600 @@
 .page {
-  background: #e6f2ff;
+  background: #e8f0fe;
   min-height: 100vh;
   font-family: "Montserrat", system-ui, sans-serif;
   padding: 0;
+  overflow-x: hidden;
 }
 
 /* =============================================
-   Шапка
-   ============================================= */
-.header {
-  padding: 1.5rem 0;
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  background: rgba(230, 242, 255, 0.5);
-  backdrop-filter: blur(8px);
-  z-index: 1000;
-  border-bottom: 2px solid #3b82f6;
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
-  transform: translateY(-100%);
-  transition: transform 0.3s ease-in-out;
-}
-.header.visible { transform: translateY(0); }
-.header:hover  { transform: translateY(0); }
-
-.headerContent { max-width: 1400px; margin: 0 auto; padding: 0 5vw; }
-
-.topNav {
-  display: flex;
-  justify-content: center;
-  gap: 1.8rem;
-  position: relative;
-  max-width: 1200px;
-  margin: 0 auto;
-  align-items: center;
-}
-.topBtn {
-  background: #60a5fa; color: white; border: none;
-  padding: 0.8rem 1.6rem; border-radius: 2rem;
-  font-size: clamp(0.9rem, 2vw, 1rem); font-weight: 600;
-  cursor: pointer; transition: all 0.2s;
-}
-.topBtn:hover { background: #3b82f6; transform: scale(1.05); }
-.orderHeaderBtn {
-  background: #60a5fa; color: white; border: none;
-  padding: 0.8rem 1.6rem; border-radius: 2rem;
-  font-size: clamp(0.9rem, 2vw, 1rem); font-weight: 600;
-  cursor: pointer; transition: all 0.2s; margin-left: 1rem;
-}
-.orderHeaderBtn:hover { background: #3b82f6; transform: scale(1.05); }
-.profileSection { position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 1rem; }
-.logoutTextBtn { background: none; border: none; color: #ef4444; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; padding: 0.3rem 0.8rem; }
-.logoutTextBtn:hover { color: #dc2626; transform: scale(1.05); text-decoration: underline; }
-.profile { width: 3.2rem; height: 3.2rem; background: #3b82f6; border-radius: 50%; color: white; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; border: 2px solid white; }
-.profile:hover { background: #2563eb; transform: scale(1.05); }
-.profileEmojiAuth { filter: drop-shadow(0 0 5px #3b82f6); animation: glow 2s infinite; }
-@keyframes glow { 0%,100% { filter: drop-shadow(0 0 3px #3b82f6); } 50% { filter: drop-shadow(0 0 8px #3b82f6); } }
-
-/* =============================================
-   Основной контейнер
+   Hero-полоска вверху
    ============================================= */
 .createOrder {
-  max-width: 900px;
-  margin: 6rem auto 5rem;
-  background: white;
-  border-radius: 2rem;
-  padding: 2rem;
-  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.2);
-  border: 2px solid #93c5fd;
-}
-.pageTitle {
-  font-size: 2.2rem; font-weight: 800; color: #1e3a8a;
-  margin-bottom: 2rem; text-align: center; letter-spacing: 2px;
-  text-shadow: 2px 2px 0 #bfdbfe;
+  max-width: 860px;
+  margin: 5.5rem auto 4rem;
+  padding: 0 1.5rem;
 }
 
 /* =============================================
-   Прогресс
+   Заголовок страницы
    ============================================= */
+.pageTitle {
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 900;
+  color: #1e3a8a;
+  text-align: center;
+  letter-spacing: 2px;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+.pageSub {
+  text-align: center;
+  color: #64748b;
+  font-size: 0.95rem;
+  margin-bottom: 2.5rem;
+}
+
+/* =============================================
+   Прогресс-бар
+   ============================================= */
+.progressWrap {
+  background: white;
+  border-radius: 1.5rem;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 6px 20px rgba(59,130,246,0.08);
+  border: 1.5px solid rgba(147,197,253,0.4);
+}
+
 .progressBar {
-  display: flex; justify-content: space-between;
-  margin-bottom: 3rem; position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
 }
 .progressBar::before {
-  content: ''; position: absolute; top: 15px; left: 0; right: 0;
-  height: 2px; background: #e2e8f0; z-index: 1;
+  content: '';
+  position: absolute;
+  top: 18px; left: 5%; right: 5%;
+  height: 2px;
+  background: #e2e8f0;
+  z-index: 0;
 }
-.progressStep { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; flex: 1; }
+.progressBar::after {
+  content: '';
+  position: absolute;
+  top: 18px; left: 5%;
+  height: 2px;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  z-index: 0;
+  transition: width 0.5s ease;
+  width: var(--progress-width, 0%);
+}
+
+.progressStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
 .stepNumber {
-  width: 32px; height: 32px; background: white; border: 2px solid #cbd5e1;
-  border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-weight: 700; color: #64748b; margin-bottom: 0.5rem; transition: all 0.3s;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.9rem;
+  background: white;
+  border: 2px solid #e2e8f0;
+  color: #94a3b8;
+  transition: all 0.3s cubic-bezier(.175,.885,.32,1.275);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
-.stepLabel { font-size: 0.8rem; color: #64748b; font-weight: 500; transition: all 0.3s; }
-.progressStep.active .stepNumber { background: #3b82f6; border-color: #3b82f6; color: white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); }
-.progressStep.active .stepLabel { color: #1e3a8a; font-weight: 700; }
+.stepLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: all 0.3s;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+.progressStep.active .stepNumber {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.4), 0 0 0 4px rgba(37,99,235,0.12);
+  transform: scale(1.15);
+}
+.progressStep.active .stepLabel { color: #1e40af; font-weight: 800; }
+
+.progressStep.done .stepNumber {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 4px 12px rgba(34,197,94,0.3);
+}
+.progressStep.done .stepLabel { color: #16a34a; }
 
 /* =============================================
-   Шаги
+   Карточка шага
    ============================================= */
-.formContainer { min-height: 500px; }
+.stepCard {
+  background: white;
+  border-radius: 1.8rem;
+  padding: 2rem 2.5rem 2.5rem;
+  box-shadow: 0 8px 32px rgba(59,130,246,0.1);
+  border: 1.5px solid rgba(147,197,253,0.35);
+  animation: stepIn 0.35s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes stepIn {
+  from { opacity:0; transform: translateY(12px) scale(0.99); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+
+.formContainer { min-height: 420px; }
 .step { animation: fadeIn 0.3s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.stepTitle { font-size: 1.5rem; font-weight: 700; color: #1e3a8a; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid #93c5fd; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+.stepTitle {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #1e3a8a;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.stepTitle::before {
+  content: '';
+  display: block;
+  width: 4px; height: 1.35rem;
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
 
 /* =============================================
    Шаг 1 — Устройство
    ============================================= */
-.deviceTypes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
-.deviceTypeBtn {
-  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
-  padding: 1.8rem 1rem; background: white; border: 2px solid #bfdbfe;
-  border-radius: 1.2rem; cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.06); font-family: inherit;
+.deviceTypes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1rem;
 }
-.deviceTypeBtn:hover { border-color: #3b82f6; transform: translateY(-6px); box-shadow: 0 12px 28px rgba(59, 130, 246, 0.22); }
-.deviceTypeBtn.selected { background: linear-gradient(135deg, #3b82f6, #2563eb); border-color: #3b82f6; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4); transform: translateY(-4px); }
-.deviceTypeBtn.selected .deviceIcon, .deviceTypeBtn.selected .deviceName { color: white; }
-.deviceIcon { font-size: 2.8rem; color: #3b82f6; line-height: 1; transition: transform 0.2s; }
-.deviceTypeBtn:hover .deviceIcon { transform: scale(1.15); }
-.deviceName { font-weight: 700; color: #1e3a8a; font-size: 0.95rem; text-align: center; }
-.brandsGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-top: 1rem; }
+
+.deviceTypeBtn {
+  display: flex; flex-direction: column; align-items: center; gap: 0.7rem;
+  padding: 1.5rem 0.8rem;
+  background: #f8fafc;
+  border: 1.5px solid rgba(147,197,253,0.4);
+  border-radius: 1.2rem; cursor: pointer;
+  transition: all 0.25s cubic-bezier(.175,.885,.32,1.275);
+  font-family: inherit;
+  position: relative; overflow: hidden;
+}
+.deviceTypeBtn::before {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  opacity: 0; transition: opacity 0.2s;
+}
+.deviceTypeBtn:hover { border-color: #93c5fd; transform: translateY(-5px); box-shadow: 0 12px 28px rgba(59,130,246,0.18); background: white; }
+.deviceTypeBtn:hover::before { opacity: 1; }
+.deviceTypeBtn.selected {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb, #3b82f6);
+  border-color: transparent;
+  box-shadow: 0 10px 24px rgba(37,99,235,0.4);
+  transform: translateY(-4px);
+}
+.deviceTypeBtn.selected .deviceIcon,
+.deviceTypeBtn.selected .deviceName { color: white; }
+.deviceTypeBtn.selected::before { display: none; }
+
+.deviceIcon { font-size: 2.5rem; line-height: 1; transition: transform 0.2s; }
+.deviceTypeBtn:hover .deviceIcon { transform: scale(1.15) rotate(-5deg); }
+.deviceName { font-weight: 700; color: #1e3a8a; font-size: 0.9rem; text-align: center; }
+
+.brandsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.8rem; margin-top: 1.5rem;
+}
 .brandBtn {
-  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
-  padding: 1rem; background: white; border: 2px solid #bfdbfe;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0.75rem 0.5rem;
+  background: #f8fafc; border: 1.5px solid rgba(147,197,253,0.4);
   border-radius: 1rem; cursor: pointer; transition: all 0.2s; font-family: inherit;
 }
-.brandBtn:hover { border-color: #3b82f6; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2); }
-.brandBtn.selected { background: #3b82f6; border-color: #3b82f6; }
-.brandBtn.selected .brandName { color: white; }
-.brandName { font-weight: 600; color: #1e3a8a; }
-.customDeviceSection { margin-top: 2rem; }
-.input {
-  width: 100%; padding: 0.8rem 1rem; border: 2px solid #bfdbfe;
-  border-radius: 0.8rem; font-size: 1rem; transition: all 0.2s;
-  font-family: inherit; box-sizing: border-box;
+.brandBtn:hover { border-color: #3b82f6; transform: translateY(-2px); box-shadow: 0 6px 14px rgba(59,130,246,0.18); background: white; }
+.brandBtn.selected {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  border-color: transparent; box-shadow: 0 6px 16px rgba(37,99,235,0.35);
 }
-.input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+.brandBtn.selected .brandName { color: white; }
+.brandName { font-weight: 700; color: #1e3a8a; font-size: 0.9rem; }
+
+.customDeviceSection { margin-top: 1.5rem; }
+.inputLabel { display: block; font-size: 0.82rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.5rem; }
+.input {
+  width: 100%; padding: 0.85rem 1.2rem;
+  border: 1.5px solid rgba(147,197,253,0.5);
+  border-radius: 1rem; font-size: 0.97rem;
+  background: white; color: #1e3a8a;
+  transition: all 0.2s; font-family: inherit; box-sizing: border-box;
+}
+.input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.input::placeholder { color: #c0cfe8; }
 
 /* =============================================
    Шаг 2 — Проблема
-   СТАТИЧНЫЙ textarea со скроллом (resize:none)
    ============================================= */
 .textarea {
   width: 100%;
-  height: 140px;          /* фиксированная высота */
-  padding: 1rem;
-  border: 2px solid #bfdbfe;
+  height: 140px;
+  padding: 1rem 1.2rem;
+  border: 1.5px solid rgba(147,197,253,0.5);
   border-radius: 1rem;
-  font-size: 1rem;
-  resize: none;           /* запрещаем изменение размера */
-  overflow-y: auto;       /* скролл если текст не помещается */
+  font-size: 0.97rem;
+  resize: none;
+  overflow-y: auto;
   margin-bottom: 1.5rem;
   font-family: inherit;
   box-sizing: border-box;
-  line-height: 1.5;
-  scrollbar-width: thin;
-  scrollbar-color: #3b82f6 #e6f2ff;
+  line-height: 1.6;
+  color: #1e3a8a; background: white;
+  transition: all 0.2s;
+  scrollbar-width: thin; scrollbar-color: #93c5fd #f0f7ff;
 }
-.textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
-.textarea::-webkit-scrollbar { width: 6px; }
-.textarea::-webkit-scrollbar-track { background: #e6f2ff; border-radius: 6px; }
-.textarea::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 6px; }
+.textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.textarea::placeholder { color: #c0cfe8; }
+.textarea::-webkit-scrollbar { width: 5px; }
+.textarea::-webkit-scrollbar-track { background: #f0f7ff; border-radius: 5px; }
+.textarea::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 5px; }
 
-.photoUpload { margin-bottom: 2rem; }
-.photoUpload h3 { font-size: 1.1rem; color: #1e3a8a; margin-bottom: 1rem; }
+.photoUpload { margin-bottom: 0; }
+.photoUpload h3 { font-size: 0.9rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.8rem; }
 .photoLabel { display: inline-block; cursor: pointer; }
-.photoBtn { display: inline-block; padding: 0.8rem 1.5rem; background: #60a5fa; color: white; border-radius: 2rem; font-weight: 600; transition: all 0.2s; }
-.photoBtn:hover { background: #3b82f6; transform: scale(1.05); }
-.photoList { margin-top: 1rem; }
-.photoItem { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; background: #f8fafc; border: 1px solid #bfdbfe; border-radius: 0.5rem; margin-bottom: 0.5rem; }
-.removePhoto { width: 24px; height: 24px; border-radius: 50%; border: none; background: #ef4444; color: white; cursor: pointer; transition: all 0.2s; }
-.removePhoto:hover { background: #dc2626; transform: scale(1.1); }
+.photoBtn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: white; border-radius: 2rem; font-weight: 700; font-size: 0.9rem;
+  transition: all 0.2s; box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+}
+.photoBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37,99,235,0.4); }
+.photoList { margin-top: 0.8rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.photoItem {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.5rem 0.9rem; background: #f8fafc;
+  border: 1px solid rgba(147,197,253,0.4); border-radius: 0.8rem;
+  font-size: 0.88rem; color: #475569;
+}
+.removePhoto {
+  width: 22px; height: 22px; border-radius: 50%; border: none;
+  background: rgba(239,68,68,0.12); color: #ef4444; cursor: pointer;
+  font-size: 0.85rem; transition: all 0.2s; flex-shrink: 0;
+}
+.removePhoto:hover { background: #ef4444; color: white; }
 
 /* =============================================
    Шаг 3 — Услуги
    ============================================= */
 .servicesList {
-  display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 2rem;
-  max-height: 350px; overflow-y: auto; padding-right: 0.5rem;
-  scrollbar-width: thin; scrollbar-color: #3b82f6 #e6f2ff;
+  display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.5rem;
+  max-height: 360px; overflow-y: auto; padding-right: 0.4rem;
+  scrollbar-width: thin; scrollbar-color: #93c5fd #f0f7ff;
 }
-.servicesList::-webkit-scrollbar { width: 8px; }
-.servicesList::-webkit-scrollbar-track { background: #e6f2ff; border-radius: 10px; }
-.servicesList::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; border: 2px solid #e6f2ff; }
+.servicesList::-webkit-scrollbar { width: 5px; }
+.servicesList::-webkit-scrollbar-track { background: #f0f7ff; border-radius: 5px; }
+.servicesList::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 5px; }
+
 .serviceItem {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem 1.5rem; background: #f8fafc; border: 1px solid #bfdbfe;
-  border-radius: 0.8rem; cursor: pointer; transition: all 0.2s;
+  padding: 1rem 1.2rem; background: #f8fafc;
+  border: 1.5px solid rgba(147,197,253,0.35);
+  border-radius: 1rem; cursor: pointer; transition: all 0.2s;
 }
-.serviceItem:hover { border-color: #3b82f6; transform: translateX(5px); box-shadow: 0 5px 15px rgba(59, 130, 246, 0.1); }
-.serviceItem.selected { background: #dbeafe; border-color: #3b82f6; }
-.serviceInfo { display: flex; gap: 2rem; align-items: center; }
-.serviceName { font-weight: 600; color: #1e3a8a; min-width: 200px; }
-.servicePrice { font-weight: 700; color: #3b82f6; background: white; padding: 0.2rem 1rem; border-radius: 2rem; min-width: 80px; text-align: center; }
-.serviceCheck { color: #3b82f6; font-weight: 700; font-size: 1.2rem; width: 30px; text-align: center; }
+.serviceItem:hover { border-color: #93c5fd; background: white; transform: translateX(4px); box-shadow: 0 4px 14px rgba(59,130,246,0.12); }
+.serviceItem.selected {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border-color: #3b82f6;
+  box-shadow: 0 4px 14px rgba(59,130,246,0.14);
+}
+
+.serviceInfo { display: flex; gap: 2rem; align-items: center; flex: 1; }
+.serviceName { font-weight: 700; color: #1e3a8a; font-size: 0.95rem; min-width: 180px; }
+.servicePrice {
+  font-weight: 800; color: #1d4ed8;
+  background: white; padding: 0.25rem 0.9rem;
+  border-radius: 2rem; font-size: 0.9rem;
+  border: 1px solid rgba(147,197,253,0.5);
+  white-space: nowrap;
+}
+.serviceItem.selected .servicePrice {
+  background: #2563eb; color: white; border-color: transparent;
+  box-shadow: 0 3px 8px rgba(37,99,235,0.3);
+}
+
+.serviceCheck {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #e2e8f0; color: transparent;
+  font-size: 0.85rem; font-weight: 700; transition: all 0.2s;
+  border: 2px solid #e2e8f0;
+}
+.serviceItem.selected .serviceCheck {
+  background: #2563eb; color: white; border-color: #2563eb;
+  box-shadow: 0 3px 8px rgba(37,99,235,0.35);
+}
 
 /* =============================================
    Шаг 4 — Доп. услуги
    ============================================= */
 .extraServicesList {
-  display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;
-  max-height: 350px; overflow-y: auto; padding-right: 0.5rem;
-  scrollbar-width: thin; scrollbar-color: #3b82f6 #e6f2ff;
+  display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1.5rem;
 }
-.extraServicesList::-webkit-scrollbar { width: 8px; }
-.extraServicesList::-webkit-scrollbar-track { background: #e6f2ff; border-radius: 10px; }
-.extraServicesList::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; border: 2px solid #e6f2ff; }
+
 .extraServiceItem {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 1.2rem 1.5rem; background: #f8fafc; border: 1px solid #bfdbfe;
-  border-radius: 1rem; cursor: pointer; transition: all 0.2s;
+  padding: 1.2rem 1.4rem; background: #f8fafc;
+  border: 1.5px solid rgba(147,197,253,0.35);
+  border-radius: 1.2rem; cursor: pointer; transition: all 0.25s;
+  gap: 1rem;
 }
-.extraServiceItem:hover { border-color: #3b82f6; transform: translateX(5px); box-shadow: 0 5px 15px rgba(59, 130, 246, 0.1); }
-.extraServiceItem.selected { background: #dbeafe; border-color: #3b82f6; }
-.extraServiceInfo { display: flex; flex-direction: column; gap: 0.3rem; }
-.extraServiceName { font-weight: 700; color: #1e3a8a; font-size: 1.1rem; }
-.extraServiceDesc { color: #64748b; font-size: 0.9rem; }
-.extraServiceRight { display: flex; align-items: center; gap: 1.5rem; }
-.extraServicePrice { font-weight: 700; color: #3b82f6; background: white; padding: 0.3rem 1.2rem; border-radius: 2rem; font-size: 1rem; min-width: 100px; text-align: center; }
+.extraServiceItem:hover { border-color: #93c5fd; background: white; box-shadow: 0 6px 18px rgba(59,130,246,0.12); transform: translateY(-2px); }
+.extraServiceItem.selected {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border-color: #3b82f6;
+  box-shadow: 0 6px 18px rgba(59,130,246,0.15);
+}
 
+.extraServiceInfo { display: flex; flex-direction: column; gap: 0.25rem; flex: 1; }
+.extraServiceName { font-weight: 800; color: #1e3a8a; font-size: 1rem; }
+.extraServiceDesc { color: #64748b; font-size: 0.85rem; }
+
+.extraServiceRight { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+.extraServicePrice {
+  font-weight: 800; color: #1d4ed8;
+  background: white; padding: 0.35rem 1.1rem;
+  border-radius: 2rem; font-size: 0.95rem;
+  border: 1px solid rgba(147,197,253,0.5);
+  white-space: nowrap;
+}
+.extraServiceItem.selected .extraServicePrice {
+  background: #2563eb; color: white; border-color: transparent;
+  box-shadow: 0 3px 8px rgba(37,99,235,0.3);
+}
+
+/* Чекбокс */
+.extraCheck {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #e2e8f0; color: transparent;
+  font-size: 0.85rem; font-weight: 700; transition: all 0.25s;
+  border: 2px solid #e2e8f0;
+}
+.extraServiceItem.selected .extraCheck {
+  background: #2563eb; color: white; border-color: #2563eb;
+  box-shadow: 0 3px 8px rgba(37,99,235,0.35);
+}
+
+/* Итоговая цена */
 .totalPrice {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 1.5rem; background: #dbeafe; border-radius: 1rem;
-  margin-bottom: 2rem; font-size: 1.2rem; font-weight: 600; color: #1e3a8a;
+  padding: 1.3rem 1.5rem;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border-radius: 1.2rem; margin-top: 0.5rem;
+  border: 1.5px solid rgba(147,197,253,0.5);
 }
-.price { font-size: 1.8rem; font-weight: 800; color: #3b82f6; background: white; padding: 0.3rem 1.5rem; border-radius: 2rem; }
+.totalPrice span:first-child { font-size: 1rem; font-weight: 700; color: #1e3a8a; }
+.price {
+  font-size: 1.7rem; font-weight: 900; color: #1d4ed8;
+  background: white; padding: 0.3rem 1.3rem;
+  border-radius: 2rem;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.2);
+}
 
 /* =============================================
-   Шаг 5 — Полный календарь месяца
+   Шаг 5 — Календарь
    ============================================= */
 .calendar {
-  background: white;
-  border-radius: 1.2rem;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  border: 2px solid #bfdbfe;
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.08);
+  background: white; border-radius: 1.2rem;
+  padding: 1.4rem; margin-bottom: 1rem;
+  border: 1.5px solid rgba(147,197,253,0.4);
+  box-shadow: 0 4px 16px rgba(59,130,246,0.07);
 }
 
 .calendarHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.8rem;
-  border-bottom: 2px solid #e6f2ff;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 1rem; padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(147,197,253,0.3);
 }
 
 .calendarNavBtn {
   width: 2.2rem; height: 2.2rem;
-  background: #eff6ff; border: 2px solid #bfdbfe;
-  border-radius: 50%; font-size: 1.2rem; font-weight: 700;
-  color: #3b82f6; cursor: pointer; transition: all 0.2s;
+  background: #f0f7ff; border: 1.5px solid rgba(147,197,253,0.5);
+  border-radius: 50%; font-size: 1.1rem; font-weight: 700;
+  color: #2563eb; cursor: pointer; transition: all 0.2s;
   display: flex; align-items: center; justify-content: center;
   font-family: inherit;
 }
-.calendarNavBtn:hover:not(:disabled) { background: #3b82f6; color: white; border-color: #3b82f6; }
+.calendarNavBtn:hover:not(:disabled) { background: #2563eb; color: white; border-color: #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
 .calendarNavBtn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.calendarMonth {
-  font-size: 1.1rem; font-weight: 800; color: #1e3a8a;
-  text-transform: capitalize; letter-spacing: 0.5px;
-}
+.calendarMonth { font-size: 1.05rem; font-weight: 800; color: #1e3a8a; text-transform: capitalize; }
 
-.weekDays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 0.4rem;
-}
-.weekDay {
-  text-align: center; font-weight: 700; color: #94a3b8;
-  font-size: 0.75rem; padding: 0.4rem 0;
-  text-transform: uppercase; letter-spacing: 0.5px;
-}
-.weekDay:nth-child(6), .weekDay:nth-child(7) { color: #f87171; }
+.weekDays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 0.3rem; }
+.weekDay { text-align: center; font-weight: 700; color: #94a3b8; font-size: 0.72rem; padding: 0.35rem 0; text-transform: uppercase; letter-spacing: 0.4px; }
+.weekDay:nth-child(6), .weekDay:nth-child(7) { color: #fca5a5; }
 
-.calendarGrid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-}
-
+.calendarGrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
 .calendarEmpty { background: transparent; border: none; }
 
 .calendarDay {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  aspect-ratio: 1; min-height: 38px;
-  border: none; border-radius: 0.6rem; cursor: pointer;
-  transition: all 0.15s ease; background: transparent;
-  font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+  aspect-ratio: 1; min-height: 36px; border: none;
+  border-radius: 0.6rem; cursor: pointer;
+  transition: all 0.15s; background: transparent;
+  font-family: inherit; font-size: 0.88rem; font-weight: 600;
 }
 
-/* Прошедшие дни */
-.calendarDay.past {
-  background: #f1f5f9; color: #cbd5e1;
-  cursor: not-allowed; opacity: 0.5;
-}
+.calendarDay.past { background: #f1f5f9; color: #cbd5e1; cursor: not-allowed; }
+.calendarDay.future { background: #f1f5f9; color: #cbd5e1; cursor: not-allowed; }
+.calendarDay.booked { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
 
-/* Дни за пределами 2 недель */
-.calendarDay.future {
-  background: #f1f5f9; color: #cbd5e1;
-  cursor: not-allowed; opacity: 0.5;
-}
-
-/* Слоты заняты / недоступны */
-.calendarDay.booked {
-  background: #e2e8f0; color: #94a3b8;
-  cursor: not-allowed; opacity: 0.7;
-}
-
-/* Доступные дни — голубенький */
 .calendarDay.available {
-  background: #dbeafe; color: #1e40af;
-  font-weight: 700; border: 1px solid #93c5fd;
+  background: #dbeafe; color: #1e40af; font-weight: 700;
+  border: 1px solid rgba(147,197,253,0.6);
 }
 .calendarDay.available:hover {
-  background: #93c5fd; color: white;
-  transform: scale(1.08);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  background: #3b82f6; color: white;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59,130,246,0.35);
+  border-color: transparent;
 }
 
-/* Выбранный день */
 .calendarDay.selected {
-  background: #3b82f6 !important; color: white !important;
-  transform: scale(1.12);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
-  font-weight: 700; border: none !important;
+  background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+  color: white !important;
+  transform: scale(1.15);
+  box-shadow: 0 6px 16px rgba(37,99,235,0.45);
+  font-weight: 800; border: none !important;
 }
 
-/* Выходные среди доступных */
-.calendarDay.available.weekend {
-  background: #ede9fe; color: #6d28d9; border-color: #c4b5fd;
-}
-.calendarDay.available.weekend:hover {
-  background: #8b5cf6; color: white;
-}
+.calendarDay.available.weekend { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+.calendarDay.available.weekend:hover { background: #7c3aed; color: white; border-color: transparent; }
 
-.dayNumber { font-size: 0.9rem; font-weight: 700; line-height: 1; }
+.dayNumber { font-size: 0.88rem; font-weight: 700; line-height: 1; }
 
-/* Легенда */
 .calendarLegend {
-  display: flex; gap: 1.5rem; margin-top: 1rem;
-  padding-top: 0.8rem; border-top: 1px solid #e6f2ff;
-  justify-content: center;
+  display: flex; gap: 1.5rem; margin-top: 0.8rem;
+  padding-top: 0.8rem; border-top: 1px solid rgba(147,197,253,0.3);
+  justify-content: center; flex-wrap: wrap;
 }
-.legendItem {
-  display: flex; align-items: center; gap: 0.4rem;
-  font-size: 0.8rem; color: #64748b; font-weight: 500;
-}
-.legendDot {
-  width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
-}
+.legendItem { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: #64748b; font-weight: 600; }
+.legendDot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-/* =============================================
-   Блок времени
-   ============================================= */
+/* Время */
 .timeSection {
-  background: #f0f7ff; border-radius: 1.2rem;
-  padding: 1.5rem; border: 2px solid #bfdbfe; margin-top: 1rem;
+  background: linear-gradient(135deg, #f0f7ff, #e8f4ff);
+  border-radius: 1.2rem; padding: 1.4rem;
+  border: 1.5px solid rgba(147,197,253,0.4); margin-top: 0;
 }
-.timeTitle { font-size: 1rem; font-weight: 700; color: #1e3a8a; margin: 0 0 1rem; }
-.noSlots { color: #94a3b8; font-size: 0.95rem; text-align: center; padding: 1rem 0; margin: 0; }
+.timeTitle { font-size: 0.9rem; font-weight: 800; color: #1e3a8a; margin: 0 0 0.9rem; text-transform: uppercase; letter-spacing: 0.4px; }
+.noSlots { color: #94a3b8; font-size: 0.9rem; text-align: center; padding: 0.8rem 0; margin: 0; }
 .timeSlots { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .timeSlot {
-  padding: 0.55rem 1.2rem; background: white; border: 2px solid #bfdbfe;
-  border-radius: 2rem; font-size: 0.95rem; font-weight: 600; color: #1e40af;
-  cursor: pointer; transition: all 0.18s ease; font-family: inherit;
+  padding: 0.5rem 1.1rem; background: white;
+  border: 1.5px solid rgba(147,197,253,0.5);
+  border-radius: 2rem; font-size: 0.9rem; font-weight: 700; color: #1e40af;
+  cursor: pointer; transition: all 0.18s; font-family: inherit;
 }
-.timeSlot:hover { border-color: #3b82f6; background: #eff6ff; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2); }
-.timeSlotSelected { background: #3b82f6 !important; border-color: #3b82f6 !important; color: white !important; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+.timeSlot:hover { border-color: #3b82f6; background: #eff6ff; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(59,130,246,0.2); }
+.timeSlotSelected {
+  background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+  border-color: transparent !important; color: white !important;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.4);
+  transform: scale(1.05);
+}
 
 /* =============================================
    Шаг 6 — Подтверждение
    ============================================= */
-.confirmation { background: #f8fafc; border-radius: 1.2rem; padding: 1.5rem; margin-bottom: 2rem; }
-.confirmSection { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px dashed #bfdbfe; }
-.confirmSection h3 { font-size: 1rem; color: #64748b; margin-bottom: 0.5rem; }
-.confirmSection p { font-size: 1.1rem; font-weight: 600; color: #1e3a8a; margin: 0; }
-.confirmTotal { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 0 0; font-size: 1.2rem; font-weight: 600; color: #1e3a8a; }
-.finalPrice { font-size: 2rem; font-weight: 800; color: #3b82f6; background: #dbeafe; padding: 0.3rem 1.5rem; border-radius: 2rem; }
+.confirmation {
+  background: linear-gradient(135deg, #f8fafc, #f0f7ff);
+  border-radius: 1.4rem; padding: 1.8rem;
+  margin-bottom: 1.5rem;
+  border: 1.5px solid rgba(147,197,253,0.4);
+}
+.confirmSection {
+  margin-bottom: 1.2rem; padding-bottom: 1rem;
+  border-bottom: 1px dashed rgba(147,197,253,0.5);
+}
+.confirmSection:last-of-type { border-bottom: none; margin-bottom: 0; }
+.confirmSection h3 { font-size: 0.78rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem; }
+.confirmSection p { font-size: 1rem; font-weight: 700; color: #1e3a8a; margin: 0; }
+
+.confirmTotal {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.3rem 1.5rem;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border-radius: 1rem; margin-top: 1rem;
+  border: 1.5px solid rgba(147,197,253,0.5);
+}
+.confirmTotal span:first-child { font-size: 1rem; font-weight: 700; color: #1e3a8a; }
+.finalPrice {
+  font-size: 1.8rem; font-weight: 900; color: #1d4ed8;
+  background: white; padding: 0.3rem 1.3rem; border-radius: 2rem;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.2);
+}
 
 /* =============================================
-   Кнопки
+   Кнопки навигации
    ============================================= */
-.stepButtons { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem; }
-.prevBtn, .nextBtn, .submitBtn {
-  padding: 0.8rem 2rem; border: none; border-radius: 2rem;
-  font-weight: 600; cursor: pointer; transition: all 0.2s;
-  font-family: inherit; font-size: 1rem;
+.stepButtons {
+  display: flex; gap: 0.8rem; justify-content: flex-end;
+  margin-top: 2rem; padding-top: 1.5rem;
+  border-top: 1px solid rgba(147,197,253,0.25);
 }
-.prevBtn { background: #e2e8f0; color: #475569; }
-.prevBtn:hover { background: #cbd5e1; }
-.nextBtn { background: #3b82f6; color: white; }
-.nextBtn:hover { background: #2563eb; transform: scale(1.05); }
-.nextBtn:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
-.submitBtn { background: #22c55e; color: white; padding: 0.8rem 3rem; }
-.submitBtn:hover { background: #16a34a; transform: scale(1.05); }
+
+.prevBtn {
+  padding: 0.8rem 1.8rem; border: 1.5px solid rgba(147,197,253,0.5);
+  border-radius: 2rem; font-weight: 700; cursor: pointer;
+  background: white; color: #475569;
+  transition: all 0.2s; font-family: inherit; font-size: 0.95rem;
+}
+.prevBtn:hover { border-color: #3b82f6; color: #1d4ed8; transform: translateY(-1px); }
+
+.nextBtn {
+  padding: 0.8rem 2.2rem; border: none;
+  border-radius: 2rem; font-weight: 800; cursor: pointer;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: white; font-family: inherit; font-size: 0.95rem;
+  box-shadow: 0 6px 18px rgba(37,99,235,0.35);
+  transition: all 0.25s;
+}
+.nextBtn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(37,99,235,0.45); }
+.nextBtn:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.submitBtn {
+  padding: 0.9rem 2.8rem; border: none; border-radius: 2rem;
+  font-weight: 800; cursor: pointer;
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: white; font-family: inherit; font-size: 0.95rem;
+  box-shadow: 0 6px 18px rgba(34,197,94,0.35);
+  transition: all 0.25s;
+}
+.submitBtn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(34,197,94,0.45); }
+.submitBtn:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* Error */
+.submitError {
+  color: #dc2626; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+  padding: 0.8rem 1.2rem; border-radius: 1rem;
+  font-size: 0.9rem; font-weight: 600; margin-top: 1rem; text-align: center;
+}
 
 /* =============================================
    Адаптив
    ============================================= */
 @media (max-width: 768px) {
-  .topNav { flex-direction: column; gap: 1rem; }
-  .topBtn, .orderHeaderBtn { width: 100%; max-width: 320px; margin: 0 auto; }
-  .orderHeaderBtn { margin-left: 0; }
-  .profileSection { position: static; transform: none; justify-content: center; margin: 1rem auto; }
-  .createOrder { margin: 8rem 1rem 3rem; padding: 1.5rem; }
-  .progressBar { flex-wrap: wrap; gap: 0.5rem; }
-  .stepLabel { font-size: 0.7rem; }
-  .deviceTypes { grid-template-columns: repeat(2, 1fr); }
-  .brandsGrid { grid-template-columns: 1fr; }
-  .calendarDay { min-height: 32px; }
-  .dayNumber { font-size: 0.8rem; }
-  .stepButtons { flex-direction: column; }
-  .prevBtn, .nextBtn, .submitBtn { width: 100%; }
-  .serviceInfo { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+  .createOrder { margin: 5rem 0.75rem 3rem; padding: 0; }
+  .stepCard { padding: 1.5rem 1.2rem 2rem; border-radius: 1.2rem; }
+  .progressWrap { padding: 1.2rem; border-radius: 1.2rem; }
+  .stepLabel { font-size: 0.65rem; }
+  .deviceTypes { grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+  .deviceTypeBtn { padding: 1rem 0.5rem; }
+  .deviceIcon { font-size: 1.8rem; }
+  .brandsGrid { grid-template-columns: repeat(2, 1fr); }
+  .serviceInfo { flex-direction: column; gap: 0.4rem; align-items: flex-start; }
   .serviceName { min-width: auto; }
-  .extraServiceItem { flex-direction: column; gap: 1rem; align-items: flex-start; }
+  .extraServiceItem { flex-direction: column; align-items: flex-start; }
   .extraServiceRight { width: 100%; justify-content: space-between; }
+  .calendarDay { min-height: 32px; font-size: 0.8rem; }
+  .stepButtons { flex-direction: column-reverse; }
+  .prevBtn, .nextBtn, .submitBtn { width: 100%; text-align: center; }
 }

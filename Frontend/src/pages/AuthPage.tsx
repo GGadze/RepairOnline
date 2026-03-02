@@ -1,63 +1,30 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import SiteHeader from '../components/SiteHeader';
 import styles from '../components/AuthPage.module.css';
 import { authApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import { getAvatarEmoji } from '../utils/avatarUtils';
-
-const topNav = [
-  { id: 'main', label: 'Главная' },
-  { id: 'about', label: 'О себе' },
-  { id: 'services', label: 'Услуги' },
-  { id: 'contacts', label: 'Контакты' },
-  { id: 'reviews', label: 'Отзывы' },
-];
 
 export default function AuthPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const headerRef = useRef<HTMLElement>(null);
-  const { login, isAuthenticated, logout, user } = useAuthStore();
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const { login, isAuthenticated } = useAuthStore();
 
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showHeader, setShowHeader] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const [isLogin,          setIsLogin]          = useState(true);
+  const [email,            setEmail]            = useState('');
+  const [password,         setPassword]         = useState('');
+  const [confirmPassword,  setConfirmPassword]  = useState('');
+  const [firstName,        setFirstName]        = useState('');
+  const [lastName,         setLastName]         = useState('');
+  const [phone,            setPhone]            = useState('');
+  const [error,            setError]            = useState('');
+  const [success,          setSuccess]          = useState('');
+  const [loading,          setLoading]          = useState(false);
+  const [showPass,         setShowPass]         = useState(false);
 
   const from = (location.state as any)?.from?.pathname || '/';
 
-  // Аватар из store
-  const avatarEmoji = isAuthenticated ? getAvatarEmoji(user?.avatar_id) : '👤';
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY < lastScrollY || currentScrollY < 10) setShowHeader(true);
-      else if (currentScrollY > 100 && currentScrollY > lastScrollY) setShowHeader(false);
-      setLastScrollY(currentScrollY);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
-
-  const handleNavClick = (itemId: string) => {
-    setShowHeader(true);
-    switch (itemId) {
-      case 'main': navigate('/'); break;
-      case 'about': navigate('/', { state: { scrollTo: 'about' } }); break;
-      case 'services': navigate('/', { state: { scrollTo: 'services' } }); break;
-      case 'contacts': navigate('/', { state: { scrollTo: 'contacts' } }); break;
-      case 'reviews': navigate('/reviews'); break;
-    }
-  };
+  useEffect(() => { if (isAuthenticated) navigate(from, { replace: true }); }, [isAuthenticated]);
 
   const handleLogin = async () => {
     setError('');
@@ -65,130 +32,138 @@ export default function AuthPage() {
     setLoading(true);
     try {
       const data = await authApi.login({ email, password });
-      const base64 = data.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
+      const b64  = data.token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+      const payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
       login(data.user, data.token, payload.role as 'client' | 'admin');
-      setSuccess('Успешный вход! Перенаправление...');
-      setTimeout(() => { window.scrollTo(0, 0); navigate(from, { replace: true }); }, 1000);
+      setSuccess('Добро пожаловать!');
+      setTimeout(() => { window.scrollTo(0,0); navigate(from, { replace: true }); }, 900);
     } catch (e: any) {
       setError(e.response?.data?.error || 'Неверный email или пароль');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleRegister = async () => {
     setError('');
-    if (!email || !password || !confirmPassword || !firstName || !phone) {
-      setError('Заполните все обязательные поля'); return;
-    }
+    if (!email || !password || !confirmPassword || !firstName || !phone) { setError('Заполните обязательные поля'); return; }
     if (password !== confirmPassword) { setError('Пароли не совпадают'); return; }
     if (password.length < 6) { setError('Пароль должен быть не менее 6 символов'); return; }
     setLoading(true);
     try {
       const data = await authApi.register({ email, password, first_name: firstName, last_name: lastName, phone });
-      const base64 = data.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
+      const b64  = data.token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+      const payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
       login(data.user, data.token, payload.role as 'client' | 'admin');
-      setSuccess('Регистрация успешна! Перенаправление...');
-      setTimeout(() => { window.scrollTo(0, 0); navigate(from, { replace: true }); }, 1000);
+      setSuccess('Регистрация успешна!');
+      setTimeout(() => { window.scrollTo(0,0); navigate(from, { replace: true }); }, 900);
     } catch (e: any) {
       setError(e.response?.data?.error || 'Ошибка регистрации');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isLogin) handleLogin(); else handleRegister();
-  };
+  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); isLogin ? handleLogin() : handleRegister(); };
 
-  const switchMode = () => {
-    setIsLogin(!isLogin); setError(''); setSuccess('');
-    setEmail(''); setPassword(''); setConfirmPassword('');
-    setFirstName(''); setLastName(''); setPhone('');
-  };
+  const reset = () => { setError(''); setSuccess(''); setEmail(''); setPassword(''); setConfirmPassword(''); setFirstName(''); setLastName(''); setPhone(''); };
 
   return (
     <div className={styles.page}>
-      <header ref={headerRef} className={`${styles.header} ${showHeader ? styles.visible : ''}`}
-        onMouseEnter={() => setShowHeader(true)}>
-        <div className={styles.headerContent}>
-          <nav className={styles.topNav}>
-            {topNav.map(item => (
-              <button key={item.id} className={styles.topBtn} onClick={() => handleNavClick(item.id)}>
-                {item.label}
-              </button>
+      <SiteHeader alwaysVisible />
+
+      {/* Left decorative panel */}
+      <div className={styles.leftPanel}>
+        <div className={styles.leftBlob1}/><div className={styles.leftBlob2}/><div className={styles.leftBlob3}/>
+        <div className={styles.leftContent}>
+          <div className={styles.leftLogo}>🔧</div>
+          <h2 className={styles.leftTitle}>Ремонт-Онлайн</h2>
+          <p className={styles.leftSub}>Профессиональный ремонт техники с гарантией</p>
+          <div className={styles.leftFeatures}>
+            {['⚡ Быстро — от 2 часов', '🛡️ Гарантия 1 год', '🎯 Бесплатная диагностика', '🚗 Выезд на дом'].map(f => (
+              <div key={f} className={styles.leftFeature}>{f}</div>
             ))}
-            <button className={styles.orderHeaderBtn} onClick={() => navigate('/create-order')}>
-              Оформить заказ
-            </button>
-            <div className={styles.profileSection}>
-              {isAuthenticated && (
-                <button className={styles.logoutTextBtn} onClick={() => { logout(); navigate('/'); }}>Выйти</button>
-              )}
-              <div className={styles.profile} onClick={() => isAuthenticated ? navigate('/cabinet') : null}>
-                <span className={isAuthenticated ? styles.profileEmojiAuth : ''}>{avatarEmoji}</span>
-              </div>
-            </div>
-          </nav>
+          </div>
         </div>
-      </header>
+      </div>
 
-      <div className={styles.container}>
-        <div className={styles.authCard}>
-          <h1 className={styles.title}>{isLogin ? 'АВТОРИЗАЦИЯ' : 'РЕГИСТРАЦИЯ'}</h1>
+      {/* Right form panel */}
+      <div className={styles.rightPanel}>
+        <div className={styles.formBox}>
 
-          {error && <div className={styles.errorMessage}>{error}</div>}
-          {success && <div className={styles.successMessage}>{success}</div>}
+          {/* Toggle */}
+          <div className={styles.toggle}>
+            <button className={`${styles.toggleBtn} ${isLogin ? styles.toggleActive : ''}`}
+              onClick={() => { setIsLogin(true); reset(); }}>Вход</button>
+            <button className={`${styles.toggleBtn} ${!isLogin ? styles.toggleActive : ''}`}
+              onClick={() => { setIsLogin(false); reset(); }}>Регистрация</button>
+          </div>
+
+          <h1 className={styles.title}>{isLogin ? 'С возвращением!' : 'Создать аккаунт'}</h1>
+          <p className={styles.subtitle}>{isLogin ? 'Войдите, чтобы управлять заявками' : 'Заполните данные для регистрации'}</p>
+
+          {error   && <div className={styles.alertError}><span>⚠️</span>{error}</div>}
+          {success && <div className={styles.alertSuccess}><span>✅</span>{success}</div>}
 
           <form className={styles.form} onSubmit={handleSubmit}>
-            <div className={styles.inputGroup}>
-              <label className={styles.label}>Email *</label>
-              <input type="email" className={styles.input} value={email}
-                onChange={(e) => setEmail(e.target.value)} placeholder="Введите email" />
-            </div>
-            <div className={styles.inputGroup}>
-              <label className={styles.label}>Пароль *</label>
-              <input type="password" className={styles.input} value={password}
-                onChange={(e) => setPassword(e.target.value)} placeholder="Введите пароль" />
-            </div>
             {!isLogin && (
-              <>
-                <div className={styles.inputGroup}>
-                  <label className={styles.label}>Подтвердите пароль *</label>
-                  <input type="password" className={styles.input} value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Повторите пароль" />
-                </div>
-                <div className={styles.inputGroup}>
+              <div className={styles.row}>
+                <div className={styles.field}>
                   <label className={styles.label}>Имя *</label>
-                  <input type="text" className={styles.input} value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)} placeholder="Введите имя" />
+                  <input className={styles.input} type="text" placeholder="Иван" value={firstName} onChange={e=>setFirstName(e.target.value)} />
                 </div>
-                <div className={styles.inputGroup}>
+                <div className={styles.field}>
                   <label className={styles.label}>Фамилия</label>
-                  <input type="text" className={styles.input} value={lastName}
-                    onChange={(e) => setLastName(e.target.value)} placeholder="Введите фамилию" />
+                  <input className={styles.input} type="text" placeholder="Иванов" value={lastName} onChange={e=>setLastName(e.target.value)} />
                 </div>
-                <div className={styles.inputGroup}>
-                  <label className={styles.label}>Телефон *</label>
-                  <input type="tel" className={styles.input} value={phone}
-                    onChange={(e) => setPhone(e.target.value)} placeholder="+79001234567" />
-                </div>
-              </>
+              </div>
             )}
-            <button type="submit" className={styles.button} disabled={loading}>
-              {loading ? 'Загрузка...' : isLogin ? 'ВОЙТИ' : 'ЗАРЕГИСТРИРОВАТЬСЯ'}
-            </button>
-            <div className={styles.divider} />
-            <div className={styles.switchText}>
-              {isLogin ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}
-              <span className={styles.switchLink} onClick={switchMode}>
-                {isLogin ? 'Регистрация' : 'Авторизация'}
-              </span>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Email *</label>
+              <div className={styles.inputWrap}>
+                <span className={styles.inputIcon}>✉️</span>
+                <input className={`${styles.input} ${styles.inputWithIcon}`} type="email" placeholder="ivan@example.com" value={email} onChange={e=>setEmail(e.target.value)} />
+              </div>
             </div>
+
+            {!isLogin && (
+              <div className={styles.field}>
+                <label className={styles.label}>Телефон *</label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon}>📞</span>
+                  <input className={`${styles.input} ${styles.inputWithIcon}`} type="tel" placeholder="+7 (999) 000-00-00" value={phone} onChange={e=>setPhone(e.target.value)} />
+                </div>
+              </div>
+            )}
+
+            <div className={styles.field}>
+              <label className={styles.label}>Пароль *</label>
+              <div className={styles.inputWrap}>
+                <span className={styles.inputIcon}>🔒</span>
+                <input className={`${styles.input} ${styles.inputWithIcon}`} type={showPass ? 'text' : 'password'} placeholder="Минимум 6 символов" value={password} onChange={e=>setPassword(e.target.value)} />
+                <button type="button" className={styles.showPass} onClick={()=>setShowPass(!showPass)}>{showPass ? '🙈' : '👁️'}</button>
+              </div>
+            </div>
+
+            {!isLogin && (
+              <div className={styles.field}>
+                <label className={styles.label}>Подтвердите пароль *</label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon}>🔒</span>
+                  <input className={`${styles.input} ${styles.inputWithIcon}`} type={showPass ? 'text' : 'password'} placeholder="Повторите пароль" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} />
+                </div>
+              </div>
+            )}
+
+            <button type="submit" className={styles.submitBtn} disabled={loading}>
+              {loading ? <span className={styles.spinner}/> : null}
+              {loading ? 'Подождите...' : isLogin ? 'Войти в аккаунт' : 'Создать аккаунт'}
+            </button>
           </form>
+
+          <p className={styles.switchText}>
+            {isLogin ? 'Нет аккаунта? ' : 'Уже зарегистрированы? '}
+            <button className={styles.switchLink} onClick={() => { setIsLogin(!isLogin); reset(); }}>
+              {isLogin ? 'Зарегистрироваться' : 'Войти'}
+            </button>
+          </p>
         </div>
       </div>
     </div>

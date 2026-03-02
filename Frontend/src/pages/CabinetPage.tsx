@@ -1,17 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SiteHeader from '../components/SiteHeader';
 import styles from '../components/CabinetPage.module.css';
 import { ordersApi, reviewsApi, authApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import type { Order, OrderStatusHistory, Review } from '../types';
-
-const topNav = [
-  { id: 'main', label: 'Главная' },
-  { id: 'about', label: 'О себе' },
-  { id: 'services', label: 'Услуги' },
-  { id: 'contacts', label: 'Контакты' },
-  { id: 'reviews', label: 'Отзывы' },
-];
 
 // Маппинг ID → эмодзи (серьёзные аватары для бизнес-сайта)
 const AVATAR_MAP: Record<number, string> = {
@@ -55,8 +48,7 @@ const StarRating = ({ rating, onRatingChange, readonly = false }: StarRatingProp
 
 export default function CabinetPage() {
   const navigate = useNavigate();
-  const headerRef = useRef<HTMLElement>(null);
-  const { user, isAuthenticated, logout, setUser } = useAuthStore();
+  const { user, isAuthenticated, setUser } = useAuthStore();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -64,8 +56,6 @@ export default function CabinetPage() {
   const [reviewsMap, setReviewsMap] = useState<Record<number, Review>>({});
   const [loading, setLoading] = useState(true);
 
-  const [showHeader, setShowHeader] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
 
   // Аватар из БД (через user.avatar_id)
   const [selectedAvatarId, setSelectedAvatarId] = useState<number>(user?.avatar_id || 1);
@@ -125,27 +115,8 @@ export default function CabinetPage() {
     ordersApi.getHistory(selectedOrder.id).then(setHistory).catch(() => setHistory([]));
   }, [selectedOrder]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY < lastScrollY || currentScrollY < 10) setShowHeader(true);
-      else if (currentScrollY > 100 && currentScrollY > lastScrollY) setShowHeader(false);
-      setLastScrollY(currentScrollY);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
 
-  const handleNavClick = (itemId: string) => {
-    setShowHeader(true);
-    switch (itemId) {
-      case 'main': navigate('/'); break;
-      case 'about': navigate('/', { state: { scrollTo: 'about' } }); break;
-      case 'services': navigate('/', { state: { scrollTo: 'services' } }); break;
-      case 'contacts': navigate('/', { state: { scrollTo: 'contacts' } }); break;
-      case 'reviews': navigate('/reviews'); break;
-    }
-  };
+
 
   const handleReviewClick = (order: Order) => {
     setReviewOrder(order);
@@ -187,29 +158,7 @@ export default function CabinetPage() {
 
   return (
     <div className={styles.page}>
-      <header ref={headerRef} className={`${styles.header} ${showHeader ? styles.visible : ''}`}
-        onMouseEnter={() => setShowHeader(true)}>
-        <div className={styles.headerContent}>
-          <nav className={styles.topNav}>
-            {topNav.map(item => (
-              <button key={item.id} className={styles.topBtn} onClick={() => handleNavClick(item.id)}>
-                {item.label}
-              </button>
-            ))}
-            <button className={styles.orderHeaderBtn} onClick={() => navigate('/create-order')}>
-              Оформить заказ
-            </button>
-            <div className={styles.profileSection}>
-              {isAuthenticated && (
-                <button className={styles.logoutTextBtn} onClick={() => { logout(); navigate('/'); }}>Выйти</button>
-              )}
-              <div className={styles.profile} onClick={() => navigate('/cabinet')}>
-                <span className={styles.profileEmojiAuth}>{selectedAvatar}</span>
-              </div>
-            </div>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader alwaysVisible activeId="cabinet" />
 
       <div className={styles.cabinet}>
         <div className={styles.profileHeader}>
@@ -245,9 +194,10 @@ export default function CabinetPage() {
             )}
           </div>
 
-          <h1 className={styles.profileTitle}>ПРОФИЛЬ</h1>
+          <div className={styles.profileHeaderText}><h1 className={styles.profileTitle}>ПРОФИЛЬ</h1></div>
         </div>
 
+        <div className={styles.cabinetBody}>
         <div className={styles.profileInfo}>
           <div className={styles.infoCard}>
             <h2 className={styles.infoTitle}>Личные данные</h2>
@@ -441,6 +391,7 @@ export default function CabinetPage() {
           </div>
         </div>
       )}
+        </div> {/* cabinetBody */}
     </div>
   );
 }

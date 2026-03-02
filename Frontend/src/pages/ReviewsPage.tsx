@@ -1,185 +1,148 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SiteHeader from '../components/SiteHeader';
 import styles from '../components/ReviewsPage.module.css';
 import { reviewsApi } from '../services/api';
-import { useAuthStore } from '../store/authStore';
-import { getAvatarEmoji } from '../utils/avatarUtils';
 import type { Review } from '../types';
 
-const topNav = [
-  { id: 'main', label: 'Главная' },
-  { id: 'about', label: 'О себе' },
-  { id: 'services', label: 'Услуги' },
-  { id: 'contacts', label: 'Контакты' },
-  { id: 'reviews', label: 'Отзывы' },
-];
+const formatDate = (d: string) =>
+  new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 
-const formatDate = (dateStr: string) =>
-  new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+function Stars({ rating, size = 'md' }: { rating: number; size?: 'sm' | 'md' | 'lg' }) {
+  return (
+    <div className={`${styles.stars} ${styles['stars_' + size]}`}>
+      {[1,2,3,4,5].map(s => (
+        <span key={s} className={s <= rating ? styles.starOn : styles.starOff}>★</span>
+      ))}
+    </div>
+  );
+}
 
-const StarRating = ({ rating }: { rating: number }) => (
-  <div className={styles.stars}>
-    {[1, 2, 3, 4, 5].map(star => (
-      <span key={star} className={star <= rating ? styles.starFilled : styles.starEmpty}>★</span>
-    ))}
-  </div>
-);
+function RatingBar({ label, count, total }: { label: string; count: number; total: number }) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+  return (
+    <div className={styles.ratingBarRow}>
+      <span className={styles.ratingBarLabel}>{label}</span>
+      <div className={styles.ratingBarTrack}>
+        <div className={styles.ratingBarFill} style={{ width: `${pct}%` }} />
+      </div>
+      <span className={styles.ratingBarCount}>{count}</span>
+    </div>
+  );
+}
 
 export default function ReviewsPage() {
   const navigate = useNavigate();
-  const headerRef = useRef<HTMLElement>(null);
-  const reviewsRef = useRef<HTMLDivElement>(null);
-  const { isAuthenticated, logout, user } = useAuthStore();
-
-  // Аватар из store
-  const avatarEmoji = isAuthenticated ? getAvatarEmoji(user?.avatar_id) : '👤';
-
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [avgRating, setAvgRating] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'date' | 'rating'>('date');
-  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
-  const [showHeader, setShowHeader] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-  const [headerHeight, setHeaderHeight] = useState(0);
-
-  useEffect(() => {
-    if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
-  }, []);
+  const [reviews, setReviews]   = useState<Review[]>([]);
+  const [avg,     setAvg]       = useState(0);
+  const [loading, setLoading]   = useState(true);
+  const [sort,    setSort]      = useState<'date_desc' | 'date_asc' | 'rating_desc' | 'rating_asc'>('date_desc');
 
   useEffect(() => {
     reviewsApi.getAll()
-      .then((data) => {
-        setReviews(Array.isArray(data.reviews) ? data.reviews : []);
-        setAvgRating(data.avg_rating || 0);
-      })
+      .then(d => { setReviews(Array.isArray(d.reviews) ? d.reviews : []); setAvg(d.avg_rating || 0); })
       .catch(() => setReviews([]))
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY < lastScrollY || currentScrollY < 10) setShowHeader(true);
-      else if (currentScrollY > 100 && currentScrollY > lastScrollY) setShowHeader(false);
-      setLastScrollY(currentScrollY);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
-
-  const sortedReviews = [...(reviews || [])].sort((a, b) => {
-    if (sortBy === 'date') {
-      const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      return sortOrder === 'desc' ? -diff : diff;
-    }
-    return sortOrder === 'desc' ? b.rating - a.rating : a.rating - b.rating;
+  const sorted = [...reviews].sort((a, b) => {
+    if (sort === 'date_desc')   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    if (sort === 'date_asc')    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    if (sort === 'rating_desc') return b.rating - a.rating;
+    return a.rating - b.rating;
   });
 
-  const toggleSort = (type: 'date' | 'rating') => {
-    if (sortBy === type) setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
-    else { setSortBy(type); setSortOrder('desc'); }
-  };
-
-  const handleNavClick = (itemId: string) => {
-    setShowHeader(true);
-    switch (itemId) {
-      case 'main': navigate('/'); break;
-      case 'about': navigate('/', { state: { scrollTo: 'about' } }); break;
-      case 'services': navigate('/', { state: { scrollTo: 'services' } }); break;
-      case 'contacts': navigate('/', { state: { scrollTo: 'contacts' } }); break;
-      case 'reviews':
-        if (reviewsRef.current) {
-          window.scrollTo({ top: reviewsRef.current.getBoundingClientRect().top + window.scrollY - headerHeight - 20, behavior: 'smooth' });
-        }
-        break;
-    }
-  };
+  // Распределение рейтингов
+  const dist = [5,4,3,2,1].map(r => ({ r, count: reviews.filter(x => x.rating === r).length }));
 
   return (
     <div className={styles.page}>
-      <header ref={headerRef} className={`${styles.header} ${showHeader ? styles.visible : ''}`}
-        onMouseEnter={() => setShowHeader(true)}>
-        <div className={styles.headerContent}>
-          <nav className={styles.topNav}>
-            {topNav.map(item => (
-              <button key={item.id}
-                className={`${styles.topBtn} ${item.id === 'reviews' ? styles.active : ''}`}
-                onClick={() => handleNavClick(item.id)}>
-                {item.label}
-              </button>
-            ))}
-            <button className={styles.orderHeaderBtn} onClick={() => {
-              window.scrollTo(0, 0);
-              navigate(isAuthenticated ? '/create-order' : '/auth');
-            }}>
-              Оформить заказ
-            </button>
-            <div className={styles.profileSection}>
-              {isAuthenticated && (
-                <button className={styles.logoutTextBtn} onClick={() => { logout(); navigate('/'); }}>Выйти</button>
-              )}
-              <div className={styles.profile} onClick={() => navigate(isAuthenticated ? '/cabinet' : '/auth')}>
-                <span className={isAuthenticated ? styles.profileEmojiAuth : ''}>{avatarEmoji}</span>
-              </div>
-            </div>
-          </nav>
+      <SiteHeader alwaysVisible activeId="reviews" />
+
+      {/* Hero */}
+      <div className={styles.hero}>
+        <div className={styles.heroBlob1}/><div className={styles.heroBlob2}/>
+        <div className={styles.heroInner}>
+          <div className={styles.heroBadge}>💬 Отзывы клиентов</div>
+          <h1 className={styles.heroTitle}>Что говорят<br/><span className={styles.heroAccent}>наши клиенты</span></h1>
+          <p className={styles.heroSub}>Реальные отзывы людей, которые доверили нам свою технику</p>
         </div>
-      </header>
+      </div>
 
-      <main className={styles.main} ref={reviewsRef}>
-        <div className={styles.container}>
-          <h1 className={styles.title}>ОТЗЫВЫ НАШИХ КЛИЕНТОВ</h1>
-
-          {avgRating > 0 && (
-            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-                <StarRating rating={Math.round(avgRating)} />
-                <span style={{ color: '#888' }}>{avgRating.toFixed(1)} из 5 ({reviews.length} отзывов)</span>
-              </div>
-            </div>
-          )}
-
-          <div className={styles.sortBar}>
-            <span className={styles.sortLabel}>Сортировать по:</span>
-            <button className={`${styles.sortBtn} ${sortBy === 'date' ? styles.active : ''}`} onClick={() => toggleSort('date')}>
-              Дате {sortBy === 'date' && (sortOrder === 'desc' ? '↓' : '↑')}
-            </button>
-            <button className={`${styles.sortBtn} ${sortBy === 'rating' ? styles.active : ''}`} onClick={() => toggleSort('rating')}>
-              Оценке {sortBy === 'rating' && (sortOrder === 'desc' ? '↓' : '↑')}
-            </button>
+      <div className={styles.container}>
+        {/* Сводка рейтинга */}
+        <div className={styles.ratingCard}>
+          <div className={styles.ratingLeft}>
+            <div className={styles.ratingBig}>{avg > 0 ? avg.toFixed(1) : '—'}</div>
+            <Stars rating={Math.round(avg)} size="lg" />
+            <div className={styles.ratingTotal}>{reviews.length} {reviews.length === 1 ? 'отзыв' : reviews.length < 5 ? 'отзыва' : 'отзывов'}</div>
           </div>
-
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#888' }}>Загрузка отзывов...</div>
-          ) : (
-            <div className={styles.reviewsGrid}>
-              {sortedReviews.map(review => (
-                <div key={review.id} className={styles.reviewCard}>
-                  <div className={styles.reviewHeader}>
-                    <div className={styles.reviewerInfo}>
-                      <span className={styles.reviewerAvatar}>👤</span>
-                      <div>
-                        <h3 className={styles.reviewerName}>{review.user_name}</h3>
-                      </div>
-                    </div>
-                    <StarRating rating={review.rating} />
-                  </div>
-                  {review.comment && <p className={styles.reviewText}>{review.comment}</p>}
-                  <div className={styles.reviewDate}>{formatDate(review.created_at)}</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!loading && sortedReviews.length === 0 && (
-            <div className={styles.emptyState}>
-              <div className={styles.emptyIcon}>📝</div>
-              <div>Пока нет отзывов</div>
-            </div>
-          )}
+          <div className={styles.ratingRight}>
+            {dist.map(d => <RatingBar key={d.r} label={`${d.r} ★`} count={d.count} total={reviews.length} />)}
+          </div>
         </div>
-      </main>
+
+        {/* Сортировка */}
+        <div className={styles.sortRow}>
+          <span className={styles.sortLabel}>Сортировка:</span>
+          {([
+            ['date_desc',   'Сначала новые'],
+            ['date_asc',    'Сначала старые'],
+            ['rating_desc', 'По оценке ↓'],
+            ['rating_asc',  'По оценке ↑'],
+          ] as const).map(([val, label]) => (
+            <button key={val}
+              className={`${styles.sortBtn} ${sort === val ? styles.sortBtnActive : ''}`}
+              onClick={() => setSort(val)}>{label}</button>
+          ))}
+        </div>
+
+        {/* Список */}
+        {loading ? (
+          <div className={styles.loader}>
+            <div className={styles.loaderSpinner}/>
+            <span>Загрузка отзывов...</span>
+          </div>
+        ) : sorted.length === 0 ? (
+          <div className={styles.empty}>
+            <div className={styles.emptyIcon}>💬</div>
+            <div className={styles.emptyTitle}>Пока нет отзывов</div>
+            <div className={styles.emptySub}>Будьте первым, кто оставит отзыв после ремонта</div>
+          </div>
+        ) : (
+          <div className={styles.grid}>
+            {sorted.map((r, i) => (
+              <div key={r.id} className={styles.card} style={{ '--i': i } as React.CSSProperties}>
+                <div className={styles.cardTop}>
+                  <div className={styles.avatar}>
+                    {r.user_name?.charAt(0)?.toUpperCase() ?? '?'}
+                  </div>
+                  <div className={styles.userInfo}>
+                    <div className={styles.userName}>{r.user_name ?? 'Аноним'}</div>
+                    <div className={styles.userDate}>{formatDate(r.created_at)}</div>
+                  </div>
+                  <Stars rating={r.rating} size="sm" />
+                </div>
+                {r.comment && <p className={styles.cardText}>{r.comment}</p>}
+                <div className={styles.cardFooter}>
+                  <span className={styles.verifiedBadge}>✓ Проверенный заказ</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* CTA */}
+        <div className={styles.cta}>
+          <div className={styles.ctaText}>
+            <h3>Стали нашим клиентом?</h3>
+            <p>Поделитесь своим опытом — это поможет другим сделать выбор</p>
+          </div>
+          <button className={styles.ctaBtn} onClick={() => navigate('/cabinet')}>
+            Оставить отзыв →
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

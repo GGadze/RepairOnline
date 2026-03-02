@@ -1,19 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from '../components/CreateOrderPage.module.css';
+import SiteHeader from '../components/SiteHeader';
 import { categoriesApi, ordersApi, slotsApi } from '../services/api';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import { getAvatarEmoji } from '../utils/avatarUtils';
 import type { Category, TimeSlot } from '../types';
-
-const topNav = [
-  { id: 'main', label: 'Главная' },
-  { id: 'about', label: 'О себе' },
-  { id: 'services', label: 'Услуги' },
-  { id: 'contacts', label: 'Контакты' },
-  { id: 'reviews', label: 'Отзывы' },
-];
 
 const CATEGORY_ICONS: Record<string, string> = {
   'Смартфоны': '📱', 'Ноутбуки': '💻', 'Планшеты': '📟',
@@ -59,14 +51,8 @@ function formatMonthLabel(year: number, month: number): string {
 
 export default function CreateOrderPage() {
   const navigate = useNavigate();
-  const headerRef = useRef<HTMLElement>(null);
-  const { isAuthenticated, logout, user } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
-  // Аватар из store
-  const avatarEmoji = isAuthenticated ? getAvatarEmoji(user?.avatar_id) : '👤';
-
-  const [showHeader, setShowHeader] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const [currentStep, setCurrentStep] = useState(1);
 
   // Шаг 1
@@ -107,16 +93,7 @@ export default function CreateOrderPage() {
     if (!isAuthenticated) navigate('/auth');
   }, [isAuthenticated, navigate]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const cur = window.scrollY;
-      if (cur < lastScrollY || cur < 10) setShowHeader(true);
-      else if (cur > 100 && cur > lastScrollY) setShowHeader(false);
-      setLastScrollY(cur);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+
 
   const CATEGORY_ORDER = ['Смартфоны', 'Ноутбуки', 'Планшеты', 'Телевизоры', 'Бытовая техника', 'Другое'];
 
@@ -264,16 +241,6 @@ export default function CreateOrderPage() {
     return currentlyViewing > thisMonth;
   };
 
-  const handleNavClick = (itemId: string) => {
-    setShowHeader(true);
-    switch (itemId) {
-      case 'main': navigate('/'); break;
-      case 'about': navigate('/', { state: { scrollTo: 'about' } }); break;
-      case 'services': navigate('/', { state: { scrollTo: 'services' } }); break;
-      case 'contacts': navigate('/', { state: { scrollTo: 'contacts' } }); break;
-      case 'reviews': navigate('/reviews'); break;
-    }
-  };
 
   const handleServiceToggle = (s: Category) => {
     setSelectedServices(prev => prev.find(x => x.id === s.id) ? prev.filter(x => x.id !== s.id) : [...prev, s]);
@@ -391,42 +358,24 @@ export default function CreateOrderPage() {
 
   return (
     <div className={styles.page}>
-      <header ref={headerRef} className={`${styles.header} ${showHeader ? styles.visible : ''}`}
-        onMouseEnter={() => setShowHeader(true)}>
-        <div className={styles.headerContent}>
-          <nav className={styles.topNav}>
-            {topNav.map(item => (
-              <button key={item.id} className={styles.topBtn} onClick={() => handleNavClick(item.id)}>
-                {item.label}
-              </button>
-            ))}
-            <button className={styles.orderHeaderBtn} onClick={() => navigate('/create-order')}>
-              Оформить заказ
-            </button>
-            <div className={styles.profileSection}>
-              {isAuthenticated && (
-                <button className={styles.logoutTextBtn} onClick={() => { logout(); navigate('/'); }}>Выйти</button>
-              )}
-              <div className={styles.profile} onClick={() => navigate('/cabinet')}>
-                <span className={styles.profileEmojiAuth}>{avatarEmoji}</span>
-              </div>
-            </div>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader alwaysVisible />
 
       <div className={styles.createOrder}>
         <h1 className={styles.pageTitle}>ОФОРМЛЕНИЕ ЗАЯВКИ</h1>
+        <p className={styles.pageSub}>Заполните форму — мы свяжемся с вами для подтверждения</p>
 
+        <div className={styles.progressWrap}>
         <div className={styles.progressBar}>
           {['Устройство', 'Проблема', 'Услуги', 'Доп. услуги', 'Время', 'Подтверждение'].map((label, i) => (
-            <div key={label} className={`${styles.progressStep} ${currentStep >= i + 1 ? styles.active : ''}`}>
+            <div key={label} className={`${styles.progressStep} ${currentStep === i + 1 ? styles.active : ''} ${currentStep > i + 1 ? styles.done : ''}`}>
               <span className={styles.stepNumber}>{i + 1}</span>
               <span className={styles.stepLabel}>{label}</span>
             </div>
           ))}
         </div>
+        </div>{/* /progressWrap */}
 
+        <div className={styles.stepCard}>
         <div className={styles.formContainer}>
 
           {/* ШАГ 1 — Устройство */}
@@ -674,6 +623,7 @@ export default function CreateOrderPage() {
               </div>
             </div>
           )}
+        </div>{/* /stepCard */}
         </div>
       </div>
     </div>

@@ -1,219 +1,100 @@
 .page {
-  background: #e6f2ff;
+  background: #e8f0fe;
   min-height: 100vh;
   font-family: "Montserrat", system-ui, sans-serif;
   padding: 0;
   position: relative;
 }
 
-.header {
-  padding: 1.5rem 0;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: rgba(230, 242, 255, 0.5);
-  backdrop-filter: blur(8px);
-  z-index: 1000;
-  border-bottom: 2px solid #3b82f6;
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
-  transform: translateY(-100%);
-  transition: transform 0.3s ease-in-out;
-  width: 100%;
-}
-
-.header.visible {
-  transform: translateY(0);
-}
-
-.header:hover {
-  transform: translateY(0);
-}
-
-.headerContent {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 5vw;
-}
-
-.topNav {
-  display: flex;
-  justify-content: center;
-  gap: 1.8rem;
-  position: relative;
-  max-width: 1200px;
-  margin: 0 auto;
-  align-items: center;
-}
-
-.topBtn {
-  background: #60a5fa;
-  color: white;
-  border: none;
-  padding: 0.8rem 1.6rem;
-  border-radius: 2rem;
-  font-size: clamp(0.9rem, 2vw, 1rem);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.topBtn:hover {
-  background: #3b82f6;
-  transform: scale(1.05);
-}
-
-.orderHeaderBtn {
-  background: #60a5fa;
-  color: white;
-  border: none;
-  padding: 0.8rem 1.6rem;
-  border-radius: 2rem;
-  font-size: clamp(0.9rem, 2vw, 1rem);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-left: 1rem;
-}
-
-.orderHeaderBtn:hover {
-  background: #3b82f6;
-  transform: scale(1.05);
-}
-
-.profileSection {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.logoutTextBtn {
-  background: none;
-  border: none;
-  color: #ef4444;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  padding: 0.3rem 0.8rem;
-  text-decoration: none;
-}
-
-.logoutTextBtn:hover {
-  color: #dc2626;
-  transform: scale(1.05);
-  text-decoration: underline;
-}
-
-.profile {
-  width: 3.2rem;
-  height: 3.2rem;
-  background: #3b82f6;
-  border-radius: 50%;
-  color: white;
-  font-size: 1.8rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 2px solid white;
-}
-
-.profile:hover {
-  background: #2563eb;
-  transform: scale(1.05);
-}
-
-.profileEmojiAuth {
-  filter: drop-shadow(0 0 5px #3b82f6);
-  animation: glow 2s infinite;
-}
-
-@keyframes glow {
-  0%, 100% { filter: drop-shadow(0 0 3px #3b82f6); }
-  50%       { filter: drop-shadow(0 0 8px #3b82f6); }
-}
-
-/* =============================================
-   Кабинет
-   ============================================= */
-
 .cabinet {
   max-width: 1200px;
-  margin: 6rem auto 5rem;
+  margin: 5.5rem auto 5rem;
   background: white;
   border-radius: 2rem;
-  padding: 2rem;
-  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.2);
-  border: 2px solid #93c5fd;
+  padding: 0;
+  box-shadow: 0 20px 50px rgba(59, 130, 246, 0.15);
+  border: 1.5px solid rgba(147,197,253,0.5);
+  overflow: hidden;
 }
 
+/* ── Шапка профиля ── */
 .profileHeader {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
+  padding: 2.5rem 2.5rem 2rem;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px dashed #93c5fd;
+  gap: 2rem;
   position: relative;
+  overflow: visible; /* picker должен выходить за пределы */
+}
+.profileHeader::before {
+  content: '';
+  position: absolute; top: -80px; right: -80px;
+  width: 280px; height: 280px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(96,165,250,0.2) 0%, transparent 65%);
+  pointer-events: none;
+}
+.profileHeader::after {
+  content: '';
+  position: absolute; bottom: -60px; left: 20%;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 65%);
+  pointer-events: none;
 }
 
 /* Аватар */
 .profileAvatar {
-  width: 70px;
-  height: 70px;
-  background: #3b82f6;
+  width: 80px;
+  height: 80px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(12px);
+  border: 2.5px solid rgba(255,255,255,0.4);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.2rem;
-  color: white;
-  border: 3px solid white;
-  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+  font-size: 2.5rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2), 0 0 0 4px rgba(255,255,255,0.1);
   position: relative;
-  transition: all 0.2s;
+  transition: all 0.25s;
   flex-shrink: 0;
+  cursor: pointer;
+  z-index: 2;
 }
-
 .profileAvatar:hover {
-  transform: scale(1.05);
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+  transform: scale(1.07);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.28), 0 0 0 6px rgba(255,255,255,0.18);
 }
 
 .avatarEditBadge {
   position: absolute;
-  bottom: -2px;
-  right: -2px;
-  font-size: 0.75rem;
+  bottom: -3px;
+  right: -3px;
+  font-size: 0.7rem;
   background: white;
   border-radius: 50%;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.6rem;
+  height: 1.6rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   line-height: 1;
+  border: 1.5px solid rgba(147,197,253,0.4);
 }
 
 /* Пикер аватаров */
 .avatarPicker {
   position: absolute;
-  top: 80px;
+  top: calc(100% + 12px);
   left: 0;
   background: white;
-  border-radius: 1rem;
-  padding: 1rem;
-  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
-  border: 2px solid #93c5fd;
-  z-index: 200;
-  min-width: 280px;
+  border-radius: 1.2rem;
+  padding: 1.2rem;
+  box-shadow: 0 20px 50px rgba(59, 130, 246, 0.35), 0 0 0 1px rgba(147,197,253,0.4);
+  border: 1.5px solid rgba(147,197,253,0.5);
+  z-index: 9999;
+  min-width: 300px;
 }
 
 .avatarPickerTitle {
@@ -260,11 +141,21 @@
 }
 
 .profileTitle {
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: #1e3a8a;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: white;
   margin: 0;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  position: relative; z-index: 2;
+}
+
+.cabinetBody {
+  padding: 2rem 2.5rem;
+}
+
+/* add z-index:2 to profileHeader title */
+.profileHeaderText {
+  position: relative; z-index: 2;
 }
 
 .profileInfo {

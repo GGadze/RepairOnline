@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from '../components/HomePage.module.css';
+import SiteHeader from '../components/SiteHeader';
 import { useAuthStore } from '../store/authStore';
-import { getAvatarEmoji } from '../utils/avatarUtils';
 
 const topNav = [
   { id: 'main',     label: 'Главная'  },
@@ -80,9 +80,8 @@ function CountUp({ to, suffix, run }: { to: number; suffix: string; run: boolean
 export default function HomePage() {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const { isAuthenticated, logout, user } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
-  const headerRef    = useRef<HTMLElement>(null);
   const heroRef      = useRef<HTMLDivElement>(null);
   const mindmapRef   = useRef<HTMLDivElement>(null);
   const aboutRef     = useRef<HTMLDivElement>(null);
@@ -95,23 +94,10 @@ export default function HomePage() {
 
   const [positions,      setPositions]      = useState<{x:number;y:number}[]>([]);
   const [activeCategory, setActiveCategory] = useState('Смартфоны');
-  const [showHeader,     setShowHeader]     = useState(true);
-  const [lastScrollY,    setLastScrollY]    = useState(0);
-  const [headerHeight,   setHeaderHeight]   = useState(0);
+  const [headerHeight,   setHeaderHeight]   = useState(72);
 
-  const avatarEmoji = isAuthenticated ? getAvatarEmoji(user?.avatar_id) : '👤';
 
-  useEffect(() => { if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight); }, []);
 
-  useEffect(() => {
-    const fn = () => {
-      const cur = window.scrollY;
-      setShowHeader(cur < lastScrollY || cur < 10);
-      setLastScrollY(cur);
-    };
-    window.addEventListener('scroll', fn, { passive: true });
-    return () => window.removeEventListener('scroll', fn);
-  }, [lastScrollY]);
 
   useEffect(() => {
     if (!location.state?.scrollTo) return;
@@ -130,7 +116,6 @@ export default function HomePage() {
   };
 
   const handleNavClick = (id: string) => {
-    setShowHeader(true);
     if (id === 'reviews') { navigate('/reviews'); return; }
     const m: Record<string,React.RefObject<HTMLDivElement | null>> = { main:heroRef, about:aboutRef, services:servicesRef, contacts:contactsRef };
     scrollTo((m[id] ?? heroRef).current);
@@ -161,33 +146,7 @@ export default function HomePage() {
     <div className={styles.page}>
 
       {/* ─── ШАПКА ─── */}
-      <header ref={headerRef} className={`${styles.header} ${showHeader ? styles.visible : ''}`}
-        onMouseEnter={() => setShowHeader(true)}>
-        <div className={styles.headerContent}>
-          <nav className={styles.topNav}>
-            <div className={styles.logo} onClick={() => scrollTo(heroRef.current)}>
-              <span className={styles.logoIcon}>🔧</span>
-              <span className={styles.logoText}>Ремонт-Онлайн</span>
-            </div>
-            <div className={styles.navLinks}>
-              {topNav.map(item => (
-                <button key={item.id} className={styles.topBtn} onClick={() => handleNavClick(item.id)}>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            <div className={styles.navRight}>
-              <button className={styles.orderHeaderBtn} onClick={handleOrder}>Оформить заказ</button>
-              {isAuthenticated && (
-                <button className={styles.logoutTextBtn} onClick={() => logout()}>Выйти</button>
-              )}
-              <div className={styles.profile} onClick={() => { window.scrollTo(0,0); navigate(isAuthenticated ? '/cabinet' : '/auth'); }}>
-                <span className={isAuthenticated ? styles.profileEmojiAuth : ''}>{avatarEmoji}</span>
-              </div>
-            </div>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader refs={{ hero: heroRef, about: aboutRef, services: servicesRef, contacts: contactsRef }} />
 
       {/* ─── HERO ─── */}
       <div ref={heroRef} className={styles.hero}>
@@ -215,6 +174,7 @@ export default function HomePage() {
               <div className={styles.heroOrbInner}>🔧</div>
               <div className={styles.heroOrbRing1}/>
               <div className={styles.heroOrbRing2}/>
+              <div className={styles.heroOrbRing3}/>
             </div>
             <div className={styles.heroBadge1}>✅ Гарантия 1 год</div>
             <div className={styles.heroBadge2}>⚡ От 2 часов</div>
@@ -227,10 +187,17 @@ export default function HomePage() {
       </div>
 
       {/* ─── MINDMAP ─── */}
-      <div className={styles.mindmapWrapper}>
-        <p className={styles.mindmapHint}>Выберите тип устройства</p>
+      <div className={styles.mindmapSection}>
+        <div className={styles.mindmapGlow1}/><div className={styles.mindmapGlow2}/>
+        <p className={styles.mindmapHint}>ВЫБЕРИТЕ ТИП УСТРОЙСТВА</p>
         <div ref={mindmapRef} className={styles.mindmap}>
-          <div className={styles.circle}>🔧</div>
+          {/* Центральный орб */}
+          <div className={styles.circle}>
+            <div className={styles.circleRing1}/>
+            <div className={styles.circleRing2}/>
+            <div className={styles.circleRing3}/>
+            <span className={styles.circleIcon}>🔧</span>
+          </div>
           {categories.map((cat, i) => {
             const pos = positions[i];
             if (!pos) return null;
@@ -383,7 +350,7 @@ export default function HomePage() {
         <div className={styles.contactsGrid}>
           <div className={styles.mapBox}>
             <iframe
-              src="https://yandex.ru/map-widget/v1/?ll=55.1012%2C51.2088&z=16&pt=55.1012%2C51.2088%2Cpm2rdm&l=map"
+              src="https://yandex.ru/map-widget/v1/?ll=55.1012%2C51.2088&z=16&pt=55.1012%2C51.2088%2Cpm2rdl&l=map&text=%D0%9D%D0%B8%D0%B6%D0%BD%D0%B5%D1%81%D0%B0%D0%BA%D0%BC%D0%B0%D1%80%D1%81%D0%BA%D0%B8%D0%B9%2C+%D1%83%D0%BB.+%D0%91%D0%B0%D1%81%D1%82%D0%B8%D0%BE%D0%BD%D0%BD%D0%B0%D1%8F+48"
               width="100%" height="100%" frameBorder="0"
               title="п. Нижнесакмарский, ул. Бастионная, 48"
               style={{display:'block',minHeight:340}}
