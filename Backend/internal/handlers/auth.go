@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/GGadze/RepairOnline/internal/middleware"
 	"github.com/GGadze/RepairOnline/internal/models"
 	"github.com/GGadze/RepairOnline/internal/services"
 	"github.com/gofiber/fiber/v2"
@@ -54,4 +55,23 @@ func (h *AuthHandler) Me(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(user)
+}
+
+// PUT /api/auth/avatar
+func (h *AuthHandler) UpdateAvatar(c *fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+
+	var req models.UpdateAvatarRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+	if req.AvatarID < 1 || req.AvatarID > 10 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "avatar_id must be between 1 and 10"})
+	}
+
+	if err := h.authService.UpdateAvatar(userID, req.AvatarID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"avatar_id": req.AvatarID})
 }

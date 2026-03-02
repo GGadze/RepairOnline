@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import styles from '../components/AuthPage.module.css';
 import { authApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import { getAvatarEmoji } from '../utils/avatarUtils';
 
 const topNav = [
   { id: 'main', label: 'Главная' },
@@ -16,7 +17,7 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const headerRef = useRef<HTMLElement>(null);
-  const { login, isAuthenticated, logout } = useAuthStore();
+  const { login, isAuthenticated, logout, user } = useAuthStore();
 
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -25,19 +26,16 @@ export default function AuthPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const [headerHeight, setHeaderHeight] = useState(0);
 
   const from = (location.state as any)?.from?.pathname || '/';
 
-  useEffect(() => {
-    if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
-  }, []);
+  // Аватар из store
+  const avatarEmoji = isAuthenticated ? getAvatarEmoji(user?.avatar_id) : '👤';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -114,11 +112,8 @@ export default function AuthPage() {
 
   return (
     <div className={styles.page}>
-      <header
-        ref={headerRef}
-        className={`${styles.header} ${showHeader ? styles.visible : ''}`}
-        onMouseEnter={() => setShowHeader(true)}
-      >
+      <header ref={headerRef} className={`${styles.header} ${showHeader ? styles.visible : ''}`}
+        onMouseEnter={() => setShowHeader(true)}>
         <div className={styles.headerContent}>
           <nav className={styles.topNav}>
             {topNav.map(item => (
@@ -131,12 +126,10 @@ export default function AuthPage() {
             </button>
             <div className={styles.profileSection}>
               {isAuthenticated && (
-                <button className={styles.logoutTextBtn} onClick={() => { logout(); navigate('/'); }}>
-                  Выйти
-                </button>
+                <button className={styles.logoutTextBtn} onClick={() => { logout(); navigate('/'); }}>Выйти</button>
               )}
               <div className={styles.profile} onClick={() => isAuthenticated ? navigate('/cabinet') : null}>
-                <span className={isAuthenticated ? styles.profileEmojiAuth : ''}>👤</span>
+                <span className={isAuthenticated ? styles.profileEmojiAuth : ''}>{avatarEmoji}</span>
               </div>
             </div>
           </nav>
@@ -156,13 +149,11 @@ export default function AuthPage() {
               <input type="email" className={styles.input} value={email}
                 onChange={(e) => setEmail(e.target.value)} placeholder="Введите email" />
             </div>
-
             <div className={styles.inputGroup}>
               <label className={styles.label}>Пароль *</label>
               <input type="password" className={styles.input} value={password}
                 onChange={(e) => setPassword(e.target.value)} placeholder="Введите пароль" />
             </div>
-
             {!isLogin && (
               <>
                 <div className={styles.inputGroup}>
@@ -187,23 +178,10 @@ export default function AuthPage() {
                 </div>
               </>
             )}
-
-            {isLogin && (
-              <div className={styles.row}>
-                <label className={styles.checkbox}>
-                  <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-                  <span>Запомнить меня</span>
-                </label>
-                <span className={styles.forgotLink}>Забыли пароль?</span>
-              </div>
-            )}
-
             <button type="submit" className={styles.button} disabled={loading}>
               {loading ? 'Загрузка...' : isLogin ? 'ВОЙТИ' : 'ЗАРЕГИСТРИРОВАТЬСЯ'}
             </button>
-
             <div className={styles.divider} />
-
             <div className={styles.switchText}>
               {isLogin ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}
               <span className={styles.switchLink} onClick={switchMode}>

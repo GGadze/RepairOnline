@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from '../components/ReviewsPage.module.css';
 import { reviewsApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import { getAvatarEmoji } from '../utils/avatarUtils';
 import type { Review } from '../types';
 
 const topNav = [
@@ -28,9 +29,10 @@ export default function ReviewsPage() {
   const navigate = useNavigate();
   const headerRef = useRef<HTMLElement>(null);
   const reviewsRef = useRef<HTMLDivElement>(null);
-  const { isAuthenticated, logout } = useAuthStore();
+  const { isAuthenticated, logout, user } = useAuthStore();
 
-  const avatar = localStorage.getItem('user-avatar') || '👤';
+  // Аватар из store
+  const avatarEmoji = isAuthenticated ? getAvatarEmoji(user?.avatar_id) : '👤';
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [avgRating, setAvgRating] = useState(0);
@@ -70,19 +72,13 @@ export default function ReviewsPage() {
     if (sortBy === 'date') {
       const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return sortOrder === 'desc' ? -diff : diff;
-    } else {
-      return sortOrder === 'desc' ? b.rating - a.rating : a.rating - b.rating;
     }
+    return sortOrder === 'desc' ? b.rating - a.rating : a.rating - b.rating;
   });
 
   const toggleSort = (type: 'date' | 'rating') => {
     if (sortBy === type) setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
     else { setSortBy(type); setSortOrder('desc'); }
-  };
-
-  const scrollToElement = (element: HTMLElement | null) => {
-    if (!element) return;
-    window.scrollTo({ top: element.getBoundingClientRect().top + window.scrollY - headerHeight - 20, behavior: 'smooth' });
   };
 
   const handleNavClick = (itemId: string) => {
@@ -92,7 +88,11 @@ export default function ReviewsPage() {
       case 'about': navigate('/', { state: { scrollTo: 'about' } }); break;
       case 'services': navigate('/', { state: { scrollTo: 'services' } }); break;
       case 'contacts': navigate('/', { state: { scrollTo: 'contacts' } }); break;
-      case 'reviews': scrollToElement(reviewsRef.current); break;
+      case 'reviews':
+        if (reviewsRef.current) {
+          window.scrollTo({ top: reviewsRef.current.getBoundingClientRect().top + window.scrollY - headerHeight - 20, behavior: 'smooth' });
+        }
+        break;
     }
   };
 
@@ -120,7 +120,7 @@ export default function ReviewsPage() {
                 <button className={styles.logoutTextBtn} onClick={() => { logout(); navigate('/'); }}>Выйти</button>
               )}
               <div className={styles.profile} onClick={() => navigate(isAuthenticated ? '/cabinet' : '/auth')}>
-                <span className={isAuthenticated ? styles.profileEmojiAuth : ''}>{isAuthenticated ? avatar : '👤'}</span>
+                <span className={isAuthenticated ? styles.profileEmojiAuth : ''}>{avatarEmoji}</span>
               </div>
             </div>
           </nav>
@@ -131,26 +131,21 @@ export default function ReviewsPage() {
         <div className={styles.container}>
           <h1 className={styles.title}>ОТЗЫВЫ НАШИХ КЛИЕНТОВ</h1>
 
-          {/* Средний рейтинг */}
           {avgRating > 0 && (
             <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
                 <StarRating rating={Math.round(avgRating)} />
-                <span style={{ color: '#888' }}>
-                  {avgRating.toFixed(1)} из 5 ({reviews.length} отзывов)
-                </span>
+                <span style={{ color: '#888' }}>{avgRating.toFixed(1)} из 5 ({reviews.length} отзывов)</span>
               </div>
             </div>
           )}
 
           <div className={styles.sortBar}>
             <span className={styles.sortLabel}>Сортировать по:</span>
-            <button className={`${styles.sortBtn} ${sortBy === 'date' ? styles.active : ''}`}
-              onClick={() => toggleSort('date')}>
+            <button className={`${styles.sortBtn} ${sortBy === 'date' ? styles.active : ''}`} onClick={() => toggleSort('date')}>
               Дате {sortBy === 'date' && (sortOrder === 'desc' ? '↓' : '↑')}
             </button>
-            <button className={`${styles.sortBtn} ${sortBy === 'rating' ? styles.active : ''}`}
-              onClick={() => toggleSort('rating')}>
+            <button className={`${styles.sortBtn} ${sortBy === 'rating' ? styles.active : ''}`} onClick={() => toggleSort('rating')}>
               Оценке {sortBy === 'rating' && (sortOrder === 'desc' ? '↓' : '↑')}
             </button>
           </div>

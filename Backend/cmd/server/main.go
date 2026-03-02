@@ -83,6 +83,7 @@ func main() {
 	protected := api.Group("", middleware.Protected(cfg.JWTSecret))
 
 	protected.Get("/auth/me", authHandler.Me)
+	protected.Put("/auth/avatar", authHandler.UpdateAvatar) // ← новый роут
 
 	protected.Post("/orders", orderHandler.Create)
 	protected.Get("/orders", orderHandler.List)

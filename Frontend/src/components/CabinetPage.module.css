@@ -135,13 +135,13 @@
 }
 
 @keyframes glow {
-  0%, 100% {
-    filter: drop-shadow(0 0 3px #3b82f6);
-  }
-  50% {
-    filter: drop-shadow(0 0 8px #3b82f6);
-  }
+  0%, 100% { filter: drop-shadow(0 0 3px #3b82f6); }
+  50%       { filter: drop-shadow(0 0 8px #3b82f6); }
 }
+
+/* =============================================
+   Кабинет
+   ============================================= */
 
 .cabinet {
   max-width: 1200px;
@@ -160,8 +160,10 @@
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
   border-bottom: 2px dashed #93c5fd;
+  position: relative;
 }
 
+/* Аватар */
 .profileAvatar {
   width: 70px;
   height: 70px;
@@ -174,6 +176,87 @@
   color: white;
   border: 3px solid white;
   box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+  position: relative;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.profileAvatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+}
+
+.avatarEditBadge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  font-size: 0.75rem;
+  background: white;
+  border-radius: 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  line-height: 1;
+}
+
+/* Пикер аватаров */
+.avatarPicker {
+  position: absolute;
+  top: 80px;
+  left: 0;
+  background: white;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+  border: 2px solid #93c5fd;
+  z-index: 200;
+  min-width: 280px;
+}
+
+.avatarPickerTitle {
+  font-weight: 700;
+  color: #1e3a8a;
+  margin-bottom: 0.8rem;
+  font-size: 0.9rem;
+}
+
+.avatarGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
+}
+
+.avatarOption {
+  font-size: 1.8rem;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  padding: 0.3rem;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+}
+
+.avatarOption:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  transform: scale(1.1);
+}
+
+.avatarOptionSelected {
+  background: #dbeafe;
+  border-color: #3b82f6 !important;
+}
+
+.avatarOption:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .profileTitle {
@@ -218,6 +301,7 @@
   color: #64748b;
   width: 120px;
   font-size: 0.95rem;
+  flex-shrink: 0;
 }
 
 .infoValue {
@@ -259,25 +343,47 @@
   font-weight: 500;
 }
 
+/* =============================================
+   Основной контент — две колонки
+   ============================================= */
+
 .mainContent {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
   margin-top: 2rem;
+  /* Растягиваем колонки на одинаковую высоту */
+  align-items: stretch;
 }
 
-.leftColumn, .rightColumn {
+/* Левая колонка — растягивается по высоте правой */
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.leftColumn .sectionCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Правая колонка */
+.rightColumn {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
+
+/* =============================================
+   Карточки секций
+   ============================================= */
 
 .sectionCard {
   background: #f8fafc;
   border-radius: 1.2rem;
   padding: 1.5rem;
   border: 1px solid #bfdbfe;
-  height: fit-content;
 }
 
 .sectionTitle {
@@ -287,7 +393,24 @@
   margin-bottom: 1.2rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid #93c5fd;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
+
+.ordersCount {
+  background: #3b82f6;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 2rem;
+  line-height: 1.4;
+}
+
+/* =============================================
+   Список заказов — скроллируемый
+   ============================================= */
 
 .ordersList {
   list-style: none;
@@ -296,7 +419,39 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+
+  /* Растягиваем по высоте, скроллируем если больше 5 */
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden; /* запрещаем горизонтальный скролл */
+  min-height: 0; /* важно для flex + overflow */
+
+  /* Стилизация скроллбара */
+  scrollbar-width: thin;
+  scrollbar-color: #3b82f6 #e6f2ff;
 }
+
+.ordersList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ordersList::-webkit-scrollbar-track {
+  background: #e6f2ff;
+  border-radius: 10px;
+}
+
+.ordersList::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 10px;
+}
+
+.ordersList::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+/* =============================================
+   Элемент заказа
+   ============================================= */
 
 .orderItem {
   display: flex;
@@ -310,18 +465,17 @@
   width: 100%;
   box-sizing: border-box;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .orderItem:hover {
   border-color: #3b82f6;
-  transform: translateX(5px);
   box-shadow: 0 5px 15px rgba(59, 130, 246, 0.1);
 }
 
 .orderItem.selected {
   border-color: #3b82f6;
   background: #dbeafe;
-  transform: translateX(5px);
   box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2);
 }
 
@@ -404,6 +558,10 @@
   gap: 2px;
 }
 
+/* =============================================
+   Звёзды
+   ============================================= */
+
 .starsContainer {
   display: flex;
   gap: 4px;
@@ -427,6 +585,10 @@
 .star:hover {
   transform: scale(1.1);
 }
+
+/* =============================================
+   Детали заказа
+   ============================================= */
 
 .orderDetails {
   background: white;
@@ -473,20 +635,6 @@
   display: inline-block;
 }
 
-.detailComment {
-  font-style: italic;
-  color: #475569;
-  background: #f8fafc;
-  padding: 0.4rem 0.7rem;
-  border-radius: 0.4rem;
-  font-size: 0.8rem;
-  flex: 2;
-  word-break: break-word;
-  line-height: 1.3;
-  min-width: 250px;
-  margin-left: 20px;
-}
-
 .detailReview {
   flex: 1;
   background: #f8fafc;
@@ -502,10 +650,9 @@
   font-style: italic;
 }
 
-.reviewDate {
-  color: #94a3b8;
-  font-size: 0.8rem;
-}
+/* =============================================
+   История статусов
+   ============================================= */
 
 .statusList {
   display: flex;
@@ -527,32 +674,8 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #e2e8f0;
-  flex-shrink: 0;
-}
-
-.statusItem.created .statusDot {
-  background: #f97316;
-}
-
-.statusItem.inProgress .statusDot {
   background: #3b82f6;
-  animation: pulse 1.5s infinite;
-}
-
-.statusItem.completed .statusDot {
-  background: #22c55e;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.8;
-  }
+  flex-shrink: 0;
 }
 
 .statusText {
@@ -560,6 +683,10 @@
   color: #1e3a8a;
   font-size: 0.95rem;
 }
+
+/* =============================================
+   Модальное окно
+   ============================================= */
 
 .modalOverlay {
   position: fixed;
@@ -641,61 +768,6 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
-.modalPhoto {
-  margin-bottom: 2rem;
-}
-
-.photoLabel {
-  display: inline-block;
-  cursor: pointer;
-}
-
-.photoBtn {
-  display: inline-block;
-  padding: 0.8rem 1.5rem;
-  background: #60a5fa;
-  color: white;
-  border-radius: 2rem;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.photoBtn:hover {
-  background: #3b82f6;
-  transform: scale(1.05);
-}
-
-.photoList {
-  margin-top: 1rem;
-}
-
-.photoItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 1rem;
-  background: #f8fafc;
-  border: 1px solid #bfdbfe;
-  border-radius: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.removePhoto {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: none;
-  background: #ef4444;
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.removePhoto:hover {
-  background: #dc2626;
-  transform: scale(1.1);
-}
-
 .modalButtons {
   display: flex;
   gap: 1rem;
@@ -733,9 +805,18 @@
   transform: scale(1.05);
 }
 
+/* =============================================
+   Адаптив
+   ============================================= */
+
 @media (max-width: 968px) {
   .mainContent {
     grid-template-columns: 1fr;
+  }
+
+  .leftColumn .sectionCard {
+    /* На мобиле ограничиваем высоту явно */
+    max-height: 380px;
   }
 }
 
@@ -762,10 +843,6 @@
     margin: 1rem auto;
   }
 
-  .profile {
-    margin: 0;
-  }
-
   .cabinet {
     margin: 8rem 1rem 3rem;
     padding: 1.5rem;
@@ -774,49 +851,44 @@
   .profileInfo {
     grid-template-columns: 1fr;
   }
-  
+
   .profileHeader {
     flex-direction: column;
     text-align: center;
   }
-  
+
+  .avatarPicker {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
   .infoRow {
     flex-direction: column;
     gap: 0.3rem;
   }
-  
+
   .infoLabel {
     width: 100%;
   }
-  
+
   .detailRow {
     flex-direction: column;
     gap: 0.3rem;
   }
-  
+
   .detailLabel {
     width: 100%;
-  }
-  
-  .orderItem {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  
-  .orderName {
-    max-width: 100%;
-    white-space: normal;
   }
 
   .modalContent {
     padding: 1.5rem;
     width: 95%;
   }
-  
+
   .modalButtons {
     flex-direction: column;
   }
-  
+
   .cancelBtn, .submitReviewBtn {
     width: 100%;
   }

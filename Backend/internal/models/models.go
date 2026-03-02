@@ -13,6 +13,7 @@ type User struct {
 	FirstName    string    `db:"first_name" json:"first_name"`
 	LastName     string    `db:"last_name" json:"last_name"`
 	Phone        string    `db:"phone" json:"phone"`
+	AvatarID     int       `db:"avatar_id" json:"avatar_id"`
 	CreatedAt    time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
 }
@@ -176,6 +177,10 @@ type CreateCategoryRequest struct {
 type CreateSlotRequest struct {
 	SlotDate string `json:"slot_date" validate:"required"`
 	SlotTime string `json:"slot_time" validate:"required"`
+}
+
+type UpdateAvatarRequest struct {
+	AvatarID int `json:"avatar_id" validate:"required,min=1,max=10"`
 }
 
 type JWTClaims struct {

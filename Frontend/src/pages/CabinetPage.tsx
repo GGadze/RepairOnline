@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from '../components/CabinetPage.module.css';
-import { ordersApi, reviewsApi } from '../services/api';
+import { ordersApi, reviewsApi, authApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import type { Order, OrderStatusHistory, Review } from '../types';
 
@@ -13,7 +13,23 @@ const topNav = [
   { id: 'reviews', label: 'Отзывы' },
 ];
 
-// Компонент звёздного рейтинга — оставляем как у коллеги
+// Маппинг ID → эмодзи (серьёзные аватары для бизнес-сайта)
+const AVATAR_MAP: Record<number, string> = {
+  1: '👤', // Обычный пользователь
+  2: '👨‍💼', // Бизнесмен
+  3: '👩‍💼', // Бизнесвумен
+  4: '🧑‍🔧', // Техник
+  5: '👨‍💻', // Разработчик (м)
+  6: '👩‍💻', // Разработчик (ж)
+  7: '🧑‍🎓', // Студент
+  8: '👮', // Офицер
+  9: '🧑‍⚕️', // Специалист
+  10: '🕵️', // Аналитик
+};
+
+const AVATAR_ENTRIES = Object.entries(AVATAR_MAP).map(([k, v]) => ({ id: Number(k), emoji: v }));
+
+// Компонент звёздного рейтинга
 interface StarRatingProps {
   rating: number;
   onRatingChange?: (rating: number) => void;
@@ -37,12 +53,10 @@ const StarRating = ({ rating, onRatingChange, readonly = false }: StarRatingProp
   );
 };
 
-const AVATAR_EMOJIS = ['👤','😊','😎','🤓','👩‍💻','👨‍💻','🧑‍🔧','👩‍🔧','🦸','🧑‍🎓','😺','🐶','🦊','🐼','🦁','🌟','🎮','🎯','🔧','⚡'];
-
 export default function CabinetPage() {
   const navigate = useNavigate();
   const headerRef = useRef<HTMLElement>(null);
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, setUser } = useAuthStore();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -53,16 +67,31 @@ export default function CabinetPage() {
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-  // Аватар
-  const [selectedAvatar, setSelectedAvatar] = useState(() => {
-    return localStorage.getItem('user-avatar') || '👤';
-  });
+  // Аватар из БД (через user.avatar_id)
+  const [selectedAvatarId, setSelectedAvatarId] = useState<number>(user?.avatar_id || 1);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
 
-  const handleAvatarSelect = (emoji: string) => {
-    setSelectedAvatar(emoji);
-    localStorage.setItem('user-avatar', emoji);
-    setShowAvatarPicker(false);
+  // Синхронизируем аватар с данными пользователя
+  useEffect(() => {
+    if (user?.avatar_id) setSelectedAvatarId(user.avatar_id);
+  }, [user?.avatar_id]);
+
+  const selectedAvatar = AVATAR_MAP[selectedAvatarId] || '👤';
+
+  const handleAvatarSelect = async (id: number) => {
+    setAvatarLoading(true);
+    try {
+      await authApi.updateAvatar(id);
+      setSelectedAvatarId(id);
+      if (user) setUser({ ...user, avatar_id: id });
+    } catch (e) {
+      // Если бэк не ответил — всё равно обновляем локально
+      setSelectedAvatarId(id);
+    } finally {
+      setAvatarLoading(false);
+      setShowAvatarPicker(false);
+    }
   };
 
   // Модалка отзыва
@@ -81,8 +110,6 @@ export default function CabinetPage() {
         setOrders(data || []);
         if (data.length > 0) setSelectedOrder(data[0]);
 
-        // Загружаем отзывы для завершённых заказов
-        const completed = data.filter(o => ['Готово', 'Выдан'].includes(o.status_name));
         const map: Record<number, Review> = {};
         try {
           const allReviews = await reviewsApi.getAll();
@@ -186,29 +213,38 @@ export default function CabinetPage() {
 
       <div className={styles.cabinet}>
         <div className={styles.profileHeader}>
-          <div
-            className={styles.profileAvatar}
-            onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-            style={{ cursor: 'pointer', position: 'relative' }}
-            title="Нажмите для смены аватара"
-          >
-            {selectedAvatar}
-            <span style={{ position: 'absolute', bottom: 0, right: 0, fontSize: '0.8rem', background: '#3b82f6', borderRadius: '50%', width: '1.2rem', height: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', lineHeight: 1 }}>✏️</span>
-          </div>
-          {showAvatarPicker && (
-            <div style={{ position: 'absolute', top: '120px', left: '2rem', background: 'white', borderRadius: '1rem', padding: '1rem', boxShadow: '0 10px 30px rgba(59,130,246,0.3)', border: '2px solid #93c5fd', zIndex: 100, display: 'flex', flexWrap: 'wrap', gap: '0.5rem', maxWidth: '320px' }}>
-              <div style={{ width: '100%', fontWeight: 700, color: '#1e3a8a', marginBottom: '0.3rem', fontSize: '0.9rem' }}>Выберите аватар:</div>
-              {AVATAR_EMOJIS.map(emoji => (
-                <button
-                  key={emoji}
-                  onClick={() => handleAvatarSelect(emoji)}
-                  style={{ fontSize: '1.8rem', background: selectedAvatar === emoji ? '#dbeafe' : 'transparent', border: selectedAvatar === emoji ? '2px solid #3b82f6' : '2px solid transparent', borderRadius: '0.5rem', cursor: 'pointer', padding: '0.2rem', transition: 'all 0.2s' }}
-                >
-                  {emoji}
-                </button>
-              ))}
+          {/* Аватар с пикером */}
+          <div style={{ position: 'relative' }}>
+            <div
+              className={styles.profileAvatar}
+              onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+              style={{ cursor: 'pointer' }}
+              title="Нажмите для смены аватара"
+            >
+              {selectedAvatar}
+              <span className={styles.avatarEditBadge}>✏️</span>
             </div>
-          )}
+
+            {showAvatarPicker && (
+              <div className={styles.avatarPicker}>
+                <div className={styles.avatarPickerTitle}>Выберите аватар:</div>
+                <div className={styles.avatarGrid}>
+                  {AVATAR_ENTRIES.map(({ id, emoji }) => (
+                    <button
+                      key={id}
+                      className={`${styles.avatarOption} ${selectedAvatarId === id ? styles.avatarOptionSelected : ''}`}
+                      onClick={() => handleAvatarSelect(id)}
+                      disabled={avatarLoading}
+                      title={`Аватар ${id}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <h1 className={styles.profileTitle}>ПРОФИЛЬ</h1>
         </div>
 
@@ -256,9 +292,15 @@ export default function CabinetPage() {
           <div style={{ textAlign: 'center', padding: '2rem' }}>Загрузка заказов...</div>
         ) : (
           <div className={styles.mainContent}>
+            {/* ЛЕВАЯ КОЛОНКА — История заказов */}
             <div className={styles.leftColumn}>
               <div className={styles.sectionCard}>
-                <h2 className={styles.sectionTitle}>История заказов</h2>
+                <h2 className={styles.sectionTitle}>
+                  История заказов
+                  {orders.length > 0 && (
+                    <span className={styles.ordersCount}>{orders.length}</span>
+                  )}
+                </h2>
                 {orders.length === 0 ? (
                   <p style={{ padding: '1rem', color: '#888' }}>У вас пока нет заказов</p>
                 ) : (
@@ -299,6 +341,7 @@ export default function CabinetPage() {
               </div>
             </div>
 
+            {/* ПРАВАЯ КОЛОНКА — Детали + История статусов */}
             <div className={styles.rightColumn}>
               {selectedOrder && (
                 <>

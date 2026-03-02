@@ -6,6 +6,7 @@ export interface User {
   first_name: string
   last_name: string
   phone: string
+  avatar_id: number
   created_at: string
   updated_at: string
 }

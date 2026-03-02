@@ -9,6 +9,7 @@ interface AuthState {
   isAuthenticated: boolean
   login: (user: User, token: string, role: 'client' | 'admin') => void
   logout: () => void
+  setUser: (user: User) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -20,6 +21,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       login: (user, token, role) => set({ user, token, role, isAuthenticated: true }),
       logout: () => set({ user: null, token: null, role: null, isAuthenticated: false }),
+      setUser: (user) => set({ user }),
     }),
     {
       name: 'auth-storage', // тот же ключ — api.ts его читает

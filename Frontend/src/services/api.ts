@@ -37,6 +37,9 @@ export const authApi = {
 
   me: () =>
     api.get<User>('/auth/me').then(r => r.data),
+
+  updateAvatar: (avatarId: number) =>
+    api.put<{ avatar_id: number }>('/auth/avatar', { avatar_id: avatarId }).then(r => r.data),
 };
 
 // =====================

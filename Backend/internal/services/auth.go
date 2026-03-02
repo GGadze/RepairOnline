@@ -25,13 +25,11 @@ func NewAuthService(userRepo *repository.UserRepository, jwtSecret string, jwtEx
 }
 
 func (s *AuthService) Register(req *models.RegisterRequest) (*models.AuthResponse, error) {
-	// Проверяем уникальность email
 	existing, _ := s.userRepo.FindByEmail(req.Email)
 	if existing != nil {
 		return nil, errors.New("email already registered")
 	}
 
-	// Хэшируем пароль
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, errors.New("failed to hash password")
@@ -49,7 +47,6 @@ func (s *AuthService) Register(req *models.RegisterRequest) (*models.AuthRespons
 		return nil, errors.New("failed to create user")
 	}
 
-	// Назначаем роль client
 	if err := s.userRepo.AssignRole(user.ID, "client"); err != nil {
 		return nil, errors.New("failed to assign role")
 	}
@@ -89,12 +86,22 @@ func (s *AuthService) GetUserByID(id int) (*models.User, error) {
 	return s.userRepo.FindByID(id)
 }
 
+func (s *AuthService) UpdateAvatar(userID, avatarID int) error {
+	return s.userRepo.UpdateAvatar(userID, avatarID)
+}
+
 func (s *AuthService) generateToken(user *models.User, role string) (string, error) {
+	// Минимум 7 дней, если jwtExpires меньше
+	expires := s.jwtExpires
+	if expires < 7*24*time.Hour {
+		expires = 7 * 24 * time.Hour
+	}
+
 	claims := jwt.MapClaims{
 		"user_id": user.ID,
 		"email":   user.Email,
 		"role":    role,
-		"exp":     time.Now().Add(s.jwtExpires).Unix(),
+		"exp":     time.Now().Add(expires).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

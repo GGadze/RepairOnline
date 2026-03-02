@@ -17,10 +17,10 @@ func (r *UserRepository) Create(user *models.User) error {
 	query := `
 		INSERT INTO users (email, password_hash, first_name, last_name, phone)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, created_at, updated_at`
+		RETURNING id, avatar_id, created_at, updated_at`
 	return r.db.QueryRowx(query,
 		user.Email, user.PasswordHash, user.FirstName, user.LastName, user.Phone,
-	).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
+	).Scan(&user.ID, &user.AvatarID, &user.CreatedAt, &user.UpdatedAt)
 }
 
 func (r *UserRepository) FindByEmail(email string) (*models.User, error) {
@@ -39,6 +39,11 @@ func (r *UserRepository) FindByID(id int) (*models.User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+func (r *UserRepository) UpdateAvatar(userID, avatarID int) error {
+	_, err := r.db.Exec(`UPDATE users SET avatar_id = $1 WHERE id = $2`, avatarID, userID)
+	return err
 }
 
 func (r *UserRepository) AssignRole(userID int, roleName string) error {
