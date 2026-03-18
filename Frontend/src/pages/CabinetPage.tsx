@@ -2,27 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
 import styles from '../components/CabinetPage.module.css';
-import { ordersApi, reviewsApi, authApi } from '../services/api';
+import { ordersApi, reviewsApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import type { Order, OrderStatusHistory, Review } from '../types';
 
-// Маппинг ID → эмодзи (серьёзные аватары для бизнес-сайта)
-const AVATAR_MAP: Record<number, string> = {
-  1: '👤', // Обычный пользователь
-  2: '👨‍💼', // Бизнесмен
-  3: '👩‍💼', // Бизнесвумен
-  4: '🧑‍🔧', // Техник
-  5: '👨‍💻', // Разработчик (м)
-  6: '👩‍💻', // Разработчик (ж)
-  7: '🧑‍🎓', // Студент
-  8: '👮', // Офицер
-  9: '🧑‍⚕️', // Специалист
-  10: '🕵️', // Аналитик
-};
-
-const AVATAR_ENTRIES = Object.entries(AVATAR_MAP).map(([k, v]) => ({ id: Number(k), emoji: v }));
-
-// Компонент звёздного рейтинга
+// Компонент звёздного рейтинга — оставляем как у коллеги
 interface StarRatingProps {
   rating: number;
   onRatingChange?: (rating: number) => void;
@@ -46,9 +30,11 @@ const StarRating = ({ rating, onRatingChange, readonly = false }: StarRatingProp
   );
 };
 
+const AVATAR_EMOJIS = ['👤','😊','😎','🤓','👩‍💻','👨‍💻','🧑‍🔧','👩‍🔧','🦸','🧑‍🎓','😺','🐶','🦊','🐼','🦁','🌟','🎮','🎯','🔧','⚡'];
+
 export default function CabinetPage() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, setUser } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -57,31 +43,16 @@ export default function CabinetPage() {
   const [loading, setLoading] = useState(true);
 
 
-  // Аватар из БД (через user.avatar_id)
-  const [selectedAvatarId, setSelectedAvatarId] = useState<number>(user?.avatar_id || 1);
+  // Аватар
+  const [selectedAvatar, setSelectedAvatar] = useState(() => {
+    return localStorage.getItem('user-avatar') || '👤';
+  });
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [avatarLoading, setAvatarLoading] = useState(false);
 
-  // Синхронизируем аватар с данными пользователя
-  useEffect(() => {
-    if (user?.avatar_id) setSelectedAvatarId(user.avatar_id);
-  }, [user?.avatar_id]);
-
-  const selectedAvatar = AVATAR_MAP[selectedAvatarId] || '👤';
-
-  const handleAvatarSelect = async (id: number) => {
-    setAvatarLoading(true);
-    try {
-      await authApi.updateAvatar(id);
-      setSelectedAvatarId(id);
-      if (user) setUser({ ...user, avatar_id: id });
-    } catch (e) {
-      // Если бэк не ответил — всё равно обновляем локально
-      setSelectedAvatarId(id);
-    } finally {
-      setAvatarLoading(false);
-      setShowAvatarPicker(false);
-    }
+  const handleAvatarSelect = (emoji: string) => {
+    setSelectedAvatar(emoji);
+    localStorage.setItem('user-avatar', emoji);
+    setShowAvatarPicker(false);
   };
 
   // Модалка отзыва
@@ -100,6 +71,7 @@ export default function CabinetPage() {
         setOrders(data || []);
         if (data.length > 0) setSelectedOrder(data[0]);
 
+        // Загружаем отзывы для завершённых заказов
         const map: Record<number, Review> = {};
         try {
           const allReviews = await reviewsApi.getAll();
@@ -158,46 +130,36 @@ export default function CabinetPage() {
 
   return (
     <div className={styles.page}>
-      <SiteHeader alwaysVisible activeId="cabinet" />
+      <SiteHeader alwaysVisible />
 
       <div className={styles.cabinet}>
         <div className={styles.profileHeader}>
-          {/* Аватар с пикером */}
-          <div style={{ position: 'relative' }}>
-            <div
-              className={styles.profileAvatar}
-              onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-              style={{ cursor: 'pointer' }}
-              title="Нажмите для смены аватара"
-            >
-              {selectedAvatar}
-              <span className={styles.avatarEditBadge}>✏️</span>
-            </div>
-
-            {showAvatarPicker && (
-              <div className={styles.avatarPicker}>
-                <div className={styles.avatarPickerTitle}>Выберите аватар:</div>
-                <div className={styles.avatarGrid}>
-                  {AVATAR_ENTRIES.map(({ id, emoji }) => (
-                    <button
-                      key={id}
-                      className={`${styles.avatarOption} ${selectedAvatarId === id ? styles.avatarOptionSelected : ''}`}
-                      onClick={() => handleAvatarSelect(id)}
-                      disabled={avatarLoading}
-                      title={`Аватар ${id}`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div
+            className={styles.profileAvatar}
+            onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+            style={{ cursor: 'pointer', position: 'relative' }}
+            title="Нажмите для смены аватара"
+          >
+            {selectedAvatar}
+            <span className={styles.editBadge}>✏</span>
           </div>
-
-          <div className={styles.profileHeaderText}><h1 className={styles.profileTitle}>ПРОФИЛЬ</h1></div>
+          {showAvatarPicker && (
+            <div className={styles.avatarPicker}>
+              <div className={styles.avatarPickerTitle}>Выберите аватар:</div>
+              {AVATAR_EMOJIS.map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={() => handleAvatarSelect(emoji)}
+                  style={{ fontSize: '1.6rem', background: selectedAvatar === emoji ? '#f59e0b20' : 'transparent', border: selectedAvatar === emoji ? '2px solid #f59e0b' : '2px solid transparent', borderRadius: '6px', cursor: 'pointer', padding: '4px', transition: 'all 0.15s' }}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+          <h1 className={styles.profileTitle}>ПРОФИЛЬ</h1>
         </div>
 
-        <div className={styles.cabinetBody}>
         <div className={styles.profileInfo}>
           <div className={styles.infoCard}>
             <h2 className={styles.infoTitle}>Личные данные</h2>
@@ -242,15 +204,9 @@ export default function CabinetPage() {
           <div style={{ textAlign: 'center', padding: '2rem' }}>Загрузка заказов...</div>
         ) : (
           <div className={styles.mainContent}>
-            {/* ЛЕВАЯ КОЛОНКА — История заказов */}
             <div className={styles.leftColumn}>
               <div className={styles.sectionCard}>
-                <h2 className={styles.sectionTitle}>
-                  История заказов
-                  {orders.length > 0 && (
-                    <span className={styles.ordersCount}>{orders.length}</span>
-                  )}
-                </h2>
+                <h2 className={styles.sectionTitle}>История заказов</h2>
                 {orders.length === 0 ? (
                   <p style={{ padding: '1rem', color: '#888' }}>У вас пока нет заказов</p>
                 ) : (
@@ -291,7 +247,6 @@ export default function CabinetPage() {
               </div>
             </div>
 
-            {/* ПРАВАЯ КОЛОНКА — Детали + История статусов */}
             <div className={styles.rightColumn}>
               {selectedOrder && (
                 <>
@@ -311,7 +266,7 @@ export default function CabinetPage() {
                       <div className={styles.detailRow}>
                         <span className={styles.detailLabel}>Дата визита:</span>
                         <span className={styles.detailValue}>
-                          {selectedOrder.appointment_date} в {selectedOrder.appointment_time}
+                          {selectedOrder.appointment_date.split('T')[0]} в {selectedOrder.appointment_time.slice(0,5)}
                         </span>
                       </div>
                       <div className={styles.detailRow}>
@@ -391,7 +346,6 @@ export default function CabinetPage() {
           </div>
         </div>
       )}
-        </div> {/* cabinetBody */}
     </div>
   );
 }

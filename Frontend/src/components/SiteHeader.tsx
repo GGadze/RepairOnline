@@ -2,27 +2,26 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { getAvatarEmoji } from '../utils/avatarUtils';
-import headerStyles from '../components/SiteHeader.module.css';
+import s from '../components/SiteHeader.module.css';
 
-const topNav = [
+const NAV = [
   { id: 'main',     label: 'Главная'  },
-  { id: 'about',    label: 'О себе'   },
-  { id: 'services', label: 'Услуги'   },
+  { id: 'auto',     label: 'Авто'     },
+  { id: 'services', label: 'Электроника' },
+  { id: 'about',    label: 'О нас'    },
   { id: 'contacts', label: 'Контакты' },
   { id: 'reviews',  label: 'Отзывы'   },
 ];
 
 interface SiteHeaderProps {
-  /** Refs для скролла — передаются только на главной странице */
   refs?: {
     hero?:     React.RefObject<HTMLElement | null>;
-    about?:    React.RefObject<HTMLElement | null>;
+    auto?:     React.RefObject<HTMLElement | null>;
     services?: React.RefObject<HTMLElement | null>;
+    about?:    React.RefObject<HTMLElement | null>;
     contacts?: React.RefObject<HTMLElement | null>;
   };
-  /** Принудительно всегда показывать шапку (для внутренних страниц) */
   alwaysVisible?: boolean;
-  /** ID текущей активной вкладки nav */
   activeId?: string;
 }
 
@@ -32,43 +31,43 @@ export default function SiteHeader({ refs, alwaysVisible = false, activeId }: Si
   const { isAuthenticated, logout, user } = useAuthStore();
   const headerRef = useRef<HTMLElement>(null);
 
-  const [visible,    setVisible]    = useState(true);
-  const [lastScroll, setLastScroll] = useState(0);
-  const [scrolled,   setScrolled]   = useState(false);
+  const [visible,  setVisible]  = useState(true);
+  const [lastY,    setLastY]    = useState(0);
+  const [scrolled, setScrolled] = useState(false);
 
-  const avatarEmoji = isAuthenticated ? getAvatarEmoji(user?.avatar_id) : '👤';
+  const emoji = isAuthenticated ? getAvatarEmoji(user?.avatar_id) : '👤';
 
   useEffect(() => {
     if (alwaysVisible) { setVisible(true); return; }
     const fn = () => {
-      const cur = window.scrollY;
-      setScrolled(cur > 40);
-      setVisible(cur < lastScroll || cur < 10);
-      setLastScroll(cur);
+      const y = window.scrollY;
+      setScrolled(y > 40);
+      setVisible(y < lastY || y < 10);
+      setLastY(y);
     };
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
-  }, [lastScroll, alwaysVisible]);
+  }, [lastY, alwaysVisible]);
 
   const scrollToRef = (ref?: React.RefObject<HTMLElement | null>) => {
     if (!ref?.current) return;
-    const hh = headerRef.current?.offsetHeight ?? 72;
-    window.scrollTo({ top: ref.current.getBoundingClientRect().top + window.scrollY - hh - 16, behavior: 'smooth' });
+    const hh = headerRef.current?.offsetHeight ?? 64;
+    window.scrollTo({ top: ref.current.getBoundingClientRect().top + window.scrollY - hh - 12, behavior: 'smooth' });
   };
 
   const handleNav = (id: string) => {
     setVisible(true);
     if (id === 'reviews') { navigate('/reviews'); return; }
     if (location.pathname !== '/') {
-      const scrollMap: Record<string, string> = { about: 'about', services: 'services', contacts: 'contacts' };
-      navigate('/', { state: { scrollTo: scrollMap[id] ?? 'main' } });
+      const map: Record<string, string> = { auto:'auto', services:'services', about:'about', contacts:'contacts' };
+      navigate('/', { state: { scrollTo: map[id] ?? 'main' } });
       return;
     }
-    // На главной — скроллим к рефу
-    if (id === 'main')     scrollToRef(refs?.hero);
-    if (id === 'about')    scrollToRef(refs?.about);
-    if (id === 'services') scrollToRef(refs?.services);
-    if (id === 'contacts') scrollToRef(refs?.contacts);
+    const map: Record<string, React.RefObject<HTMLElement | null> | undefined> = {
+      main: refs?.hero, auto: refs?.auto, services: refs?.services,
+      about: refs?.about, contacts: refs?.contacts,
+    };
+    scrollToRef(map[id]);
   };
 
   const handleOrder = () => {
@@ -76,55 +75,38 @@ export default function SiteHeader({ refs, alwaysVisible = false, activeId }: Si
     navigate(isAuthenticated ? '/create-order' : '/auth', { state: { from: { pathname: '/create-order' } } });
   };
 
-  const handleProfile = () => {
-    window.scrollTo(0, 0);
-    navigate(isAuthenticated ? '/cabinet' : '/auth');
-  };
-
   return (
     <header
       ref={headerRef}
-      className={[
-        headerStyles.header,
-        (visible || alwaysVisible) ? headerStyles.visible : '',
-        scrolled ? headerStyles.scrolled : '',
-      ].join(' ')}
+      className={[s.header, (visible || alwaysVisible) ? s.visible : '', scrolled ? s.scrolled : ''].join(' ')}
       onMouseEnter={() => setVisible(true)}
     >
-      <div className={headerStyles.inner}>
-        {/* Лого */}
-        <div className={headerStyles.logo} onClick={() => navigate('/')}>
-          <span className={headerStyles.logoIcon}>🔧</span>
-          <span className={headerStyles.logoText}>Ремонт-Онлайн</span>
+      <div className={s.inner}>
+        <div className={s.logo} onClick={() => navigate('/')}>
+          <div className={s.logoMark}>🔧</div>
+          <div>
+            <div className={s.logoText}>АвтоМастер</div>
+            <div className={s.logoSub}>Авто &amp; Электроника</div>
+          </div>
         </div>
 
-        {/* Навигация */}
-        <nav className={headerStyles.nav}>
-          {topNav.map(item => (
-            <button
-              key={item.id}
-              className={[headerStyles.navBtn, activeId === item.id ? headerStyles.navBtnActive : ''].join(' ')}
-              onClick={() => handleNav(item.id)}
-            >
+        <nav className={s.nav}>
+          {NAV.map(item => (
+            <button key={item.id}
+              className={[s.navBtn, activeId === item.id ? s.navBtnActive : ''].join(' ')}
+              onClick={() => handleNav(item.id)}>
               {item.label}
             </button>
           ))}
         </nav>
 
-        {/* Правый блок */}
-        <div className={headerStyles.right}>
-          <button className={headerStyles.orderBtn} onClick={handleOrder}>
-            Оформить заказ
-          </button>
+        <div className={s.right}>
+          <button className={s.orderBtn} onClick={handleOrder}>Записаться</button>
           {isAuthenticated && (
-            <button className={headerStyles.logoutBtn} onClick={() => logout()}>
-              Выйти
-            </button>
+            <button className={s.logoutBtn} onClick={() => logout()}>Выйти</button>
           )}
-          <button className={headerStyles.avatar} onClick={handleProfile} title="Личный кабинет">
-            <span className={isAuthenticated ? headerStyles.avatarAuth : headerStyles.avatarGuest}>
-              {avatarEmoji}
-            </span>
+          <button className={s.avatar} onClick={() => { window.scrollTo(0,0); navigate(isAuthenticated ? '/cabinet' : '/auth'); }}>
+            <span className={isAuthenticated ? s.avatarAuth : s.avatarGuest}>{emoji}</span>
           </button>
         </div>
       </div>

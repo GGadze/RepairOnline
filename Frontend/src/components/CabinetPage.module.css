@@ -1,786 +1,297 @@
+/* ── Base ── */
 .page {
-  background: #e8f0fe;
+  background: #111827;
   min-height: 100vh;
-  font-family: "Montserrat", system-ui, sans-serif;
-  padding: 0;
-  position: relative;
+  font-family: "Inter", "Montserrat", system-ui, sans-serif;
+  color: #f1f5f9;
+  padding-top: 64px;
 }
 
 .cabinet {
-  max-width: 1200px;
-  margin: 5.5rem auto 5rem;
-  background: white;
-  border-radius: 2rem;
-  padding: 0;
-  box-shadow: 0 20px 50px rgba(59, 130, 246, 0.15);
-  border: 1.5px solid rgba(147,197,253,0.5);
-  overflow: hidden;
-}
-
-/* ── Шапка профиля ── */
-.profileHeader {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
-  padding: 2.5rem 2.5rem 2rem;
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  position: relative;
-  overflow: visible; /* picker должен выходить за пределы */
-}
-.profileHeader::before {
-  content: '';
-  position: absolute; top: -80px; right: -80px;
-  width: 280px; height: 280px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(96,165,250,0.2) 0%, transparent 65%);
-  pointer-events: none;
-}
-.profileHeader::after {
-  content: '';
-  position: absolute; bottom: -60px; left: 20%;
-  width: 200px; height: 200px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 65%);
-  pointer-events: none;
-}
-
-/* Аватар */
-.profileAvatar {
-  width: 80px;
-  height: 80px;
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(12px);
-  border: 2.5px solid rgba(255,255,255,0.4);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2), 0 0 0 4px rgba(255,255,255,0.1);
-  position: relative;
-  transition: all 0.25s;
-  flex-shrink: 0;
-  cursor: pointer;
-  z-index: 2;
-}
-.profileAvatar:hover {
-  transform: scale(1.07);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.28), 0 0 0 6px rgba(255,255,255,0.18);
-}
-
-.avatarEditBadge {
-  position: absolute;
-  bottom: -3px;
-  right: -3px;
-  font-size: 0.7rem;
-  background: white;
-  border-radius: 50%;
-  width: 1.6rem;
-  height: 1.6rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  line-height: 1;
-  border: 1.5px solid rgba(147,197,253,0.4);
-}
-
-/* Пикер аватаров */
-.avatarPicker {
-  position: absolute;
-  top: calc(100% + 12px);
-  left: 0;
-  background: white;
-  border-radius: 1.2rem;
-  padding: 1.2rem;
-  box-shadow: 0 20px 50px rgba(59, 130, 246, 0.35), 0 0 0 1px rgba(147,197,253,0.4);
-  border: 1.5px solid rgba(147,197,253,0.5);
-  z-index: 9999;
-  min-width: 300px;
-}
-
-.avatarPickerTitle {
-  font-weight: 700;
-  color: #1e3a8a;
-  margin-bottom: 0.8rem;
-  font-size: 0.9rem;
-}
-
-.avatarGrid {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.4rem;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
+  align-items: start;
 }
 
-.avatarOption {
-  font-size: 1.8rem;
-  background: transparent;
-  border: 2px solid transparent;
-  border-radius: 0.6rem;
-  cursor: pointer;
-  padding: 0.3rem;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 1;
-}
-
-.avatarOption:hover {
-  background: #eff6ff;
-  border-color: #93c5fd;
-  transform: scale(1.1);
-}
-
-.avatarOptionSelected {
-  background: #dbeafe;
-  border-color: #3b82f6 !important;
-}
-
-.avatarOption:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.profileTitle {
-  font-size: 1.8rem;
-  font-weight: 900;
-  color: white;
-  margin: 0;
-  letter-spacing: 1px;
-  position: relative; z-index: 2;
-}
-
-.cabinetBody {
-  padding: 2rem 2.5rem;
-}
-
-/* add z-index:2 to profileHeader title */
-.profileHeaderText {
-  position: relative; z-index: 2;
-}
-
-.profileInfo {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.infoCard {
-  background: #f8fafc;
-  border-radius: 1.2rem;
-  padding: 1.5rem;
-  border: 1px solid #bfdbfe;
-}
-
-.infoTitle {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #1e3a8a;
-  margin-bottom: 1.2rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #93c5fd;
-}
-
-.infoRow {
-  display: flex;
-  margin-bottom: 1rem;
-  align-items: baseline;
-}
-
-.infoLabel {
-  font-weight: 600;
-  color: #64748b;
-  width: 120px;
-  font-size: 0.95rem;
-  flex-shrink: 0;
-}
-
-.infoValue {
-  font-weight: 600;
-  color: #1e3a8a;
-  font-size: 1rem;
-  background: white;
-  padding: 0.3rem 1rem;
-  border-radius: 1.5rem;
-  border: 1px solid #bfdbfe;
-  flex: 1;
-}
-
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  text-align: center;
-}
-
-.statItem {
-  background: white;
-  padding: 1rem 0.5rem;
-  border-radius: 1rem;
-  border: 1px solid #bfdbfe;
-}
-
-.statNumber {
-  display: block;
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: #3b82f6;
-  line-height: 1.2;
-}
-
-.statLabel {
-  font-size: 0.8rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-/* =============================================
-   Основной контент — две колонки
-   ============================================= */
-
-.mainContent {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-top: 2rem;
-  /* Растягиваем колонки на одинаковую высоту */
-  align-items: stretch;
-}
-
-/* Левая колонка — растягивается по высоте правой */
+/* ══════════════════════════════════
+   ЛЕВАЯ ПАНЕЛЬ — профиль
+══════════════════════════════════ */
 .leftColumn {
   display: flex;
   flex-direction: column;
+  gap: 16px;
 }
 
-.leftColumn .sectionCard {
-  flex: 1;
+.profileHeader {
+  background: #1a2535;
+  border: 1px solid #253350;
+  border-radius: 12px;
+  padding: 28px 24px;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  text-align: center;
 }
 
-/* Правая колонка */
-.rightColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.profileAvatar {
+  width: 72px; height: 72px;
+  background: #1a2235;
+  border: 2px solid #1e2d45;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.2rem;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.profileAvatar:hover { border-color: #f59e0b; }
+
+.editBadge {
+  position: absolute; bottom: 0; right: 0;
+  width: 20px; height: 20px;
+  background: #f59e0b; color: #0a0f1e;
+  border-radius: 50%;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
 }
 
-/* =============================================
-   Карточки секций
-   ============================================= */
+.avatarPicker {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 50%; transform: translateX(-50%);
+  background: #111827;
+  border: 1px solid #1e2d45;
+  border-radius: 10px;
+  padding: 14px;
+  z-index: 500;
+  display: flex; flex-wrap: wrap; gap: 6px;
+  max-width: 280px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+.avatarPickerTitle {
+  width: 100%;
+  font-size: 0.78rem; font-weight: 600;
+  color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.profileTitle {
+  font-size: 1rem; font-weight: 700; color: #f1f5f9; margin: 0;
+}
+
+/* Инфо карточка */
+.profileInfo {
+  background: #111827;
+  border: 1px solid #1e2d45;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.infoTitle {
+  font-size: 0.75rem; font-weight: 600;
+  color: #4e6280; text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #1e2d45;
+}
+
+.infoRow {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 11px 20px;
+  border-bottom: 1px solid #1a2235;
+  gap: 12px;
+}
+.infoRow:last-child { border-bottom: none; }
+.infoLabel { font-size: 0.8rem; color: #4e6280; flex-shrink: 0; }
+.infoValue { font-size: 0.85rem; color: #f1f5f9; font-weight: 500; text-align: right; word-break: break-word; }
+
+/* Stats */
+.statsGrid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.statItem {
+  background: #1e2d3d; border: 1px solid #253350;
+  border-radius: 10px; padding: 20px 16px;
+  text-align: center; display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+}
+.statNumber {
+  font-size: 2rem; font-weight: 900; color: #f59e0b;
+  line-height: 1;
+}
+.statLabel {
+  font-size: 0.82rem; color: #64748b; line-height: 1.3;
+  margin-top: 0;
+}
+
+/* ══════════════════════════════════
+   ПРАВАЯ ПАНЕЛЬ — заказы
+══════════════════════════════════ */
+.rightColumn { display: flex; flex-direction: column; gap: 20px; }
 
 .sectionCard {
-  background: #f8fafc;
-  border-radius: 1.2rem;
-  padding: 1.5rem;
-  border: 1px solid #bfdbfe;
+  background: #111827;
+  border: 1px solid #1e2d45;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .sectionTitle {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #1e3a8a;
-  margin-bottom: 1.2rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #93c5fd;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+  font-size: 0.75rem; font-weight: 600;
+  color: #4e6280; text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid #1e2d45;
+  display: flex; align-items: center; justify-content: space-between;
 }
 
-.ordersCount {
-  background: #3b82f6;
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.15rem 0.55rem;
-  border-radius: 2rem;
-  line-height: 1.4;
-}
-
-/* =============================================
-   Список заказов — скроллируемый
-   ============================================= */
-
+/* Список заказов */
 .ordersList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-
-  /* Растягиваем по высоте, скроллируем если больше 5 */
-  flex: 1;
+  max-height: 340px;
   overflow-y: auto;
-  overflow-x: hidden; /* запрещаем горизонтальный скролл */
-  min-height: 0; /* важно для flex + overflow */
-
-  /* Стилизация скроллбара */
   scrollbar-width: thin;
-  scrollbar-color: #3b82f6 #e6f2ff;
+  scrollbar-color: #1e2d45 transparent;
 }
-
-.ordersList::-webkit-scrollbar {
-  width: 6px;
-}
-
-.ordersList::-webkit-scrollbar-track {
-  background: #e6f2ff;
-  border-radius: 10px;
-}
-
-.ordersList::-webkit-scrollbar-thumb {
-  background: #3b82f6;
-  border-radius: 10px;
-}
-
-.ordersList::-webkit-scrollbar-thumb:hover {
-  background: #2563eb;
-}
-
-/* =============================================
-   Элемент заказа
-   ============================================= */
+.ordersList::-webkit-scrollbar { width: 4px; }
+.ordersList::-webkit-scrollbar-track { background: transparent; }
+.ordersList::-webkit-scrollbar-thumb { background: #1e2d45; border-radius: 2px; }
 
 .orderItem {
-  display: flex;
-  flex-direction: column;
-  padding: 0.8rem 1rem;
-  background: white;
-  border-radius: 0.8rem;
-  border: 1px solid #bfdbfe;
-  transition: all 0.2s;
+  padding: 14px 20px;
+  border-bottom: 1px solid #1a2235;
   cursor: pointer;
-  width: 100%;
-  box-sizing: border-box;
-  gap: 0.5rem;
-  flex-shrink: 0;
+  transition: background 0.1s;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
+.orderItem:last-child { border-bottom: none; }
+.orderItem:hover { background: #141e30; }
+.orderItem.selected { background: #0d1a2e; border-left: 3px solid #f59e0b; }
 
-.orderItem:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.1);
-}
+.orderItemLeft { flex: 1; min-width: 0; }
+.orderItemTitle { font-size: 0.95rem; font-weight: 600; color: #f1f5f9; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.orderItemDate  { font-size: 0.8rem; color: #4e6280; }
 
-.orderItem.selected {
-  border-color: #3b82f6;
-  background: #dbeafe;
-  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2);
-}
-
-.orderInfo {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.orderName {
-  font-weight: 600;
-  color: #1e3a8a;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 60%;
-}
-
-.orderIcon {
-  font-size: 1.1rem;
-  flex-shrink: 0;
-}
-
-.orderStatus {
-  font-size: 0.8rem;
-  padding: 0.2rem 0.8rem;
-  border-radius: 1rem;
-  font-weight: 600;
-  background: #f1f5f9;
-  color: #475569;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.orderStatus.pending {
-  background: #f97316;
-  color: white;
-}
-
-.orderStatus.inProgress {
-  background: #3b82f6;
-  color: white;
-}
-
-.orderStatus.completed {
-  background: #22c55e;
-  color: white;
-}
-
-.orderReview {
-  display: flex;
-  justify-content: flex-end;
-  width: 100%;
-}
-
-.reviewBtn {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 0.3rem 1rem;
-  border-radius: 2rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.reviewBtn:hover {
-  background: #2563eb;
-  transform: scale(1.05);
-}
-
-.reviewStars {
-  display: flex;
-  gap: 2px;
-}
-
-/* =============================================
-   Звёзды
-   ============================================= */
-
-.starsContainer {
-  display: flex;
-  gap: 4px;
-}
-
-.star {
-  font-size: 1.3rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.starFilled {
-  color: #fbbf24;
-  text-shadow: 0 0 5px rgba(251, 191, 36, 0.3);
-}
-
-.starEmpty {
-  color: #cbd5e1;
-}
-
-.star:hover {
-  transform: scale(1.1);
-}
-
-/* =============================================
-   Детали заказа
-   ============================================= */
-
-.orderDetails {
-  background: white;
-  border-radius: 1rem;
-  padding: 1.2rem;
-}
-
-.detailRow {
-  display: flex;
-  margin-bottom: 0.8rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px dashed #e2e8f0;
-}
-
-.detailRow:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
-}
-
-.detailLabel {
-  font-weight: 600;
-  color: #64748b;
-  width: 100px;
-  font-size: 0.9rem;
-  flex-shrink: 0;
-}
-
-.detailValue {
-  font-weight: 600;
-  color: #1e3a8a;
-  font-size: 0.95rem;
-  flex: 1;
-  word-break: break-word;
-}
-
-.detailPrice {
-  font-weight: 800;
-  color: #3b82f6;
-  font-size: 1.2rem;
-  background: #dbeafe;
-  padding: 0.2rem 1rem;
-  border-radius: 1.5rem;
-  display: inline-block;
-}
-
-.detailReview {
-  flex: 1;
-  background: #f8fafc;
-  padding: 0.8rem;
-  border-radius: 0.8rem;
-  border: 1px solid #bfdbfe;
-}
-
-.reviewText {
-  color: #1e3a8a;
-  font-size: 0.9rem;
-  margin: 0.5rem 0 0.2rem;
-  font-style: italic;
-}
-
-/* =============================================
-   История статусов
-   ============================================= */
-
-.statusList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.statusItem {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 0.7rem 1rem;
-  background: white;
-  border-radius: 0.8rem;
-  border: 1px solid #bfdbfe;
-}
-
+/* Статус бейдж */
 .statusDot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #3b82f6;
-  flex-shrink: 0;
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
 }
+.new         { background: #3b82f6; }
+.inProgress  { background: #f59e0b; }
+.completed   { background: #22c55e; }
+.cancelled   { background: #ef4444; }
 
-.statusText {
-  font-weight: 500;
-  color: #1e3a8a;
-  font-size: 0.95rem;
+/* Детали заказа */
+.orderDetail { padding: 20px; }
+.detailRow   { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1a2235; gap: 16px; }
+.detailRow:last-child { border-bottom: none; }
+.detailLabel { font-size: 0.875rem; color: #64748b; flex-shrink: 0; }
+.detailValue { font-size: 0.9rem; color: #f1f5f9; text-align: right; }
+.detailPrice { font-size: 1.1rem; font-weight: 800; color: #f59e0b; }
+
+/* История статусов */
+.statusList { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.statusItem { display: flex; align-items: flex-start; gap: 12px; }
+.statusText { font-size: 0.85rem; color: #f1f5f9; }
+.statusDate { font-size: 0.75rem; color: #4e6280; margin-top: 2px; }
+
+/* Кнопки */
+.reviewBtn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #f59e0b; color: #0a0f1e; border: none;
+  padding: 9px 18px; border-radius: 7px;
+  font-size: 0.85rem; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: background 0.15s;
 }
+.reviewBtn:hover { background: #fcd34d; }
 
-/* =============================================
-   Модальное окно
-   ============================================= */
+/* Звёзды */
+.starsContainer { display: flex; gap: 3px; }
+.star { font-size: 1.3rem; cursor: pointer; transition: transform 0.1s; line-height: 1; }
+.star:hover { transform: scale(1.2); }
+.starFilled { color: #f59e0b; }
+.starEmpty  { color: #1e2d45; }
 
+/* Отзывы */
+.reviewCard {
+  background: #0d1424; border: 1px solid #1e2d45; border-radius: 8px;
+  padding: 14px 16px; margin: 0 20px 16px;
+}
+.reviewHeader { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.reviewStars  {}
+.reviewDate   { font-size: 0.75rem; color: #4e6280; margin-left: auto; }
+.reviewText   { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+
+/* Пустое состояние */
+.emptyState {
+  padding: 48px 20px; text-align: center;
+  color: #4e6280; font-size: 0.875rem;
+}
+.emptyIcon { font-size: 2rem; margin-bottom: 8px; }
+
+/* Модалка отзыва */
 .modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  backdrop-filter: blur(5px);
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 20px;
 }
-
 .modalContent {
-  background: white;
-  border-radius: 2rem;
-  padding: 2rem;
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 25px 50px rgba(59, 130, 246, 0.3);
-  border: 2px solid #93c5fd;
+  background: #111827; border: 1px solid #1e2d45; border-radius: 14px;
+  padding: 32px; width: 100%; max-width: 440px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
 }
-
 .modalTitle {
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: #1e3a8a;
-  margin-bottom: 0.5rem;
-  text-align: center;
+  font-size: 1.1rem; font-weight: 700; color: #f1f5f9;
+  margin-bottom: 8px;
 }
-
-.modalSubtitle {
-  color: #64748b;
-  text-align: center;
-  margin-bottom: 2rem;
-  font-size: 1rem;
-}
-
-.modalRating {
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
 .ratingLabel {
-  display: block;
-  font-weight: 600;
-  color: #1e3a8a;
-  margin-bottom: 0.8rem;
+  font-size: 0.78rem; color: #4e6280; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 8px; margin-top: 20px;
 }
-
-.modalComment {
-  margin-bottom: 1.5rem;
-}
-
 .commentLabel {
-  display: block;
-  font-weight: 600;
-  color: #1e3a8a;
-  margin-bottom: 0.5rem;
+  font-size: 0.78rem; color: #4e6280; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 8px; margin-top: 16px;
 }
-
 .commentInput {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border: 2px solid #bfdbfe;
-  border-radius: 1rem;
-  font-size: 0.95rem;
-  resize: vertical;
-  font-family: inherit;
+  width: 100%; padding: 11px 14px; box-sizing: border-box;
+  background: #0d1424; border: 1px solid #1e2d45; border-radius: 7px;
+  font-size: 0.9rem; color: #f1f5f9; font-family: inherit;
+  resize: none; transition: border-color 0.15s;
 }
+.commentInput:focus { outline: none; border-color: #f59e0b; }
+.commentInput::placeholder { color: #253350; }
 
-.commentInput:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-
-.modalButtons {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-}
-
-.cancelBtn {
-  background: #e2e8f0;
-  color: #475569;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: 2rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.cancelBtn:hover {
-  background: #cbd5e1;
-}
-
+.modalButtons { display: flex; gap: 10px; margin-top: 20px; }
 .submitReviewBtn {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: 2rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+  flex: 1; padding: 11px; border: none; border-radius: 8px;
+  background: #f59e0b; color: #0a0f1e;
+  font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: background 0.15s;
 }
-
-.submitReviewBtn:hover {
-  background: #2563eb;
-  transform: scale(1.05);
+.submitReviewBtn:hover:not(:disabled) { background: #fcd34d; }
+.submitReviewBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.cancelBtn {
+  padding: 11px 20px; background: transparent;
+  border: 1px solid #1e2d45; border-radius: 8px;
+  color: #94a3b8; font-size: 0.9rem; cursor: pointer; font-family: inherit;
+  transition: border-color 0.15s;
 }
+.cancelBtn:hover { border-color: #253350; color: #f1f5f9; }
 
-/* =============================================
-   Адаптив
-   ============================================= */
+/* Лоадер */
+.loading { text-align: center; padding: 48px; color: #4e6280; }
 
-@media (max-width: 968px) {
-  .mainContent {
-    grid-template-columns: 1fr;
-  }
-
-  .leftColumn .sectionCard {
-    /* На мобиле ограничиваем высоту явно */
-    max-height: 380px;
-  }
+/* ══════════════════════════════════
+   АДАПТИВ
+══════════════════════════════════ */
+@media (max-width: 1024px) {
+  .cabinet { grid-template-columns: 260px 1fr; padding: 20px; }
 }
-
 @media (max-width: 768px) {
-  .topNav {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .topBtn, .orderHeaderBtn {
-    width: 100%;
-    max-width: 320px;
-    margin: 0 auto;
-  }
-
-  .orderHeaderBtn {
-    margin-left: 0;
-  }
-
-  .profileSection {
-    position: static;
-    transform: none;
-    justify-content: center;
-    margin: 1rem auto;
-  }
-
-  .cabinet {
-    margin: 8rem 1rem 3rem;
-    padding: 1.5rem;
-  }
-
-  .profileInfo {
-    grid-template-columns: 1fr;
-  }
-
-  .profileHeader {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .avatarPicker {
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .infoRow {
-    flex-direction: column;
-    gap: 0.3rem;
-  }
-
-  .infoLabel {
-    width: 100%;
-  }
-
-  .detailRow {
-    flex-direction: column;
-    gap: 0.3rem;
-  }
-
-  .detailLabel {
-    width: 100%;
-  }
-
-  .modalContent {
-    padding: 1.5rem;
-    width: 95%;
-  }
-
-  .modalButtons {
-    flex-direction: column;
-  }
-
-  .cancelBtn, .submitReviewBtn {
-    width: 100%;
-  }
+  .cabinet { grid-template-columns: 1fr; padding: 16px; }
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
 }

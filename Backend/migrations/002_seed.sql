@@ -2,204 +2,186 @@
 -- Тестовые данные для Ремонт-Онлайн
 -- =====================================================
 
--- Категории (иерархия: Тип → Бренд → Услуга)
+-- Категории
 INSERT INTO categories (name, parent_id, level, base_price) VALUES
--- Уровень 0 — типы устройств
 ('Смартфоны',       NULL, 0, 0),
 ('Ноутбуки',        NULL, 0, 0),
 ('Планшеты',        NULL, 0, 0),
 ('Телевизоры',      NULL, 0, 0),
 ('Бытовая техника', NULL, 0, 0),
-('Другое',          NULL, 0, 0);
+('Другое',          NULL, 0, 0)
+ON CONFLICT DO NOTHING;
 
--- Уровень 1 — бренды (parent = Смартфоны = 1)
-INSERT INTO categories (name, parent_id, level, base_price) VALUES
-('Apple',   1, 1, 0),
-('Samsung', 1, 1, 0),
-('Xiaomi',  1, 1, 0);
+INSERT INTO categories (name, parent_id, level, base_price)
+SELECT 'Apple',   id, 1, 0 FROM categories WHERE name = 'Смартфоны' AND parent_id IS NULL
+ON CONFLICT DO NOTHING;
+INSERT INTO categories (name, parent_id, level, base_price)
+SELECT 'Samsung', id, 1, 0 FROM categories WHERE name = 'Смартфоны' AND parent_id IS NULL
+ON CONFLICT DO NOTHING;
+INSERT INTO categories (name, parent_id, level, base_price)
+SELECT 'Xiaomi',  id, 1, 0 FROM categories WHERE name = 'Смартфоны' AND parent_id IS NULL
+ON CONFLICT DO NOTHING;
 
--- Уровень 1 — бренды ноутбуков (parent = Ноутбуки = 2)
-INSERT INTO categories (name, parent_id, level, base_price) VALUES
-('Lenovo', 2, 1, 0),
-('Asus',   2, 1, 0),
-('HP',     2, 1, 0);
+INSERT INTO categories (name, parent_id, level, base_price)
+SELECT 'Lenovo', id, 1, 0 FROM categories WHERE name = 'Ноутбуки' AND parent_id IS NULL
+ON CONFLICT DO NOTHING;
+INSERT INTO categories (name, parent_id, level, base_price)
+SELECT 'Asus',   id, 1, 0 FROM categories WHERE name = 'Ноутбуки' AND parent_id IS NULL
+ON CONFLICT DO NOTHING;
+INSERT INTO categories (name, parent_id, level, base_price)
+SELECT 'HP',     id, 1, 0 FROM categories WHERE name = 'Ноутбуки' AND parent_id IS NULL
+ON CONFLICT DO NOTHING;
 
--- Уровень 2 — услуги для Apple (parent = Apple = 7)
-INSERT INTO categories (name, parent_id, level, base_price) VALUES
-('Замена стекла',              7, 2, 2500),
-('Замена аккумулятора',        7, 2, 4500),
-('Замена дисплея',             7, 2, 9000),
-('Ремонт разъёма зарядки',     7, 2, 2800),
-('Восстановление после воды',  7, 2, 6500);
+-- Услуги Apple
+INSERT INTO categories (name, parent_id, level, base_price)
+SELECT v.name, c.id, 2, v.price FROM categories c,
+(VALUES
+  ('Замена стекла', 2500),
+  ('Замена аккумулятора', 4500),
+  ('Замена дисплея', 9000),
+  ('Ремонт разъёма зарядки', 2800),
+  ('Восстановление после воды', 6500)
+) AS v(name, price)
+WHERE c.name = 'Apple'
+ON CONFLICT DO NOTHING;
 
--- Уровень 2 — услуги для Samsung (parent = Samsung = 8)
-INSERT INTO categories (name, parent_id, level, base_price) VALUES
-('Замена стекла',              8, 2, 1800),
-('Замена аккумулятора',        8, 2, 3500),
-('Замена дисплея',             8, 2, 7500),
-('Ремонт разъёма зарядки',     8, 2, 2200),
-('Чистка от пыли',             8, 2, 1200);
+-- Услуги Samsung
+INSERT INTO categories (name, parent_id, level, base_price)
+SELECT v.name, c.id, 2, v.price FROM categories c,
+(VALUES
+  ('Замена стекла', 1800),
+  ('Замена аккумулятора', 3500),
+  ('Замена дисплея', 7500),
+  ('Ремонт разъёма зарядки', 2200),
+  ('Чистка от пыли', 1200)
+) AS v(name, price)
+WHERE c.name = 'Samsung'
+ON CONFLICT DO NOTHING;
 
--- Уровень 2 — услуги для Xiaomi (parent = Xiaomi = 9)
-INSERT INTO categories (name, parent_id, level, base_price) VALUES
-('Замена стекла',              9, 2, 1500),
-('Замена аккумулятора',        9, 2, 2800),
-('Замена дисплея',             9, 2, 5500),
-('Ремонт кнопок',              9, 2, 1800);
+-- Услуги Xiaomi
+INSERT INTO categories (name, parent_id, level, base_price)
+SELECT v.name, c.id, 2, v.price FROM categories c,
+(VALUES
+  ('Замена стекла', 1500),
+  ('Замена аккумулятора', 2800),
+  ('Замена дисплея', 5500),
+  ('Ремонт кнопок', 1800)
+) AS v(name, price)
+WHERE c.name = 'Xiaomi'
+ON CONFLICT DO NOTHING;
 
--- Уровень 2 — услуги для Lenovo (parent = Lenovo = 10)
-INSERT INTO categories (name, parent_id, level, base_price) VALUES
-('Замена термопасты',           10, 2, 2000),
-('Замена клавиатуры',           10, 2, 3500),
-('Чистка системы охлаждения',   10, 2, 2500),
-('Замена матрицы',              10, 2, 12000),
-('Замена аккумулятора',         10, 2, 7000);
+-- Услуги Lenovo
+INSERT INTO categories (name, parent_id, level, base_price)
+SELECT v.name, c.id, 2, v.price FROM categories c,
+(VALUES
+  ('Замена термопасты', 2000),
+  ('Замена клавиатуры', 3500),
+  ('Чистка системы охлаждения', 2500),
+  ('Замена матрицы', 12000),
+  ('Замена аккумулятора', 7000)
+) AS v(name, price)
+WHERE c.name = 'Lenovo'
+ON CONFLICT DO NOTHING;
 
--- Уровень 2 — услуги для Asus (parent = Asus = 11)
-INSERT INTO categories (name, parent_id, level, base_price) VALUES
-('Замена термопасты',           11, 2, 2000),
-('Ремонт материнской платы',    11, 2, 15000),
-('Замена матрицы',              11, 2, 11000),
-('Чистка системы охлаждения',   11, 2, 2500);
+-- Услуги Asus
+INSERT INTO categories (name, parent_id, level, base_price)
+SELECT v.name, c.id, 2, v.price FROM categories c,
+(VALUES
+  ('Замена термопасты', 2000),
+  ('Ремонт материнской платы', 15000),
+  ('Замена матрицы', 11000),
+  ('Чистка системы охлаждения', 2500)
+) AS v(name, price)
+WHERE c.name = 'Asus'
+ON CONFLICT DO NOTHING;
 
--- Услуги для Другое (parent = Другое = 6)
-INSERT INTO categories (name, parent_id, level, base_price) VALUES
-('Консультация',            6, 1, 500),
-('Диагностика',             6, 1, 1000),
-('Ремонт любой сложности',  6, 1, 3000),
-('Профилактика',            6, 1, 2000);
-
--- =====================================================
--- Временные слоты на ближайшие дни
--- =====================================================
-INSERT INTO time_slots (slot_date, slot_time, is_booked) VALUES
-('2026-03-03', '10:00', false),
-('2026-03-03', '11:00', false),
-('2026-03-03', '12:00', false),
-('2026-03-03', '14:00', false),
-('2026-03-03', '15:00', false),
-('2026-03-03', '16:00', false),
-
-('2026-03-04', '10:00', false),
-('2026-03-04', '11:00', false),
-('2026-03-04', '12:00', false),
-('2026-03-04', '14:00', false),
-('2026-03-04', '15:00', false),
-('2026-03-04', '16:00', false),
-('2026-03-04', '17:00', false),
-
-('2026-03-05', '10:00', false),
-('2026-03-05', '11:00', false),
-('2026-03-05', '13:00', false),
-('2026-03-05', '14:00', false),
-('2026-03-05', '16:00', false),
-
-('2026-03-06', '10:00', false),
-('2026-03-06', '11:00', false),
-('2026-03-06', '12:00', false),
-('2026-03-06', '14:00', false),
-('2026-03-06', '15:00', false),
-
-('2026-03-07', '10:00', false),
-('2026-03-07', '12:00', false),
-('2026-03-07', '14:00', false),
-('2026-03-07', '16:00', false),
-
-('2026-03-10', '10:00', false),
-('2026-03-10', '11:00', false),
-('2026-03-10', '13:00', false),
-('2026-03-10', '15:00', false),
-('2026-03-10', '17:00', false),
-
-('2026-03-11', '10:00', false),
-('2026-03-11', '11:00', false),
-('2026-03-11', '12:00', false),
-('2026-03-11', '14:00', false),
-('2026-03-11', '16:00', false),
-
-('2026-03-12', '10:00', false),
-('2026-03-12', '11:00', false),
-('2026-03-12', '14:00', false),
-('2026-03-12', '15:00', false),
-('2026-03-12', '17:00', false);
+-- Услуги Другое
+INSERT INTO categories (name, parent_id, level, base_price)
+SELECT v.name, c.id, 1, v.price FROM categories c,
+(VALUES
+  ('Консультация', 500),
+  ('Диагностика', 1000),
+  ('Ремонт любой сложности', 3000),
+  ('Профилактика', 2000)
+) AS v(name, price)
+WHERE c.name = 'Другое' AND c.parent_id IS NULL
+ON CONFLICT DO NOTHING;
 
 -- =====================================================
--- Тестовые пользователи (пароль для всех: Test1234)
--- $2a$10$ — bcrypt хэш строки "Test1234"
+-- Временные слоты — генерируем на ближайшие 30 дней
+-- =====================================================
+INSERT INTO time_slots (slot_date, slot_time, is_booked)
+SELECT
+  CURRENT_DATE + s.day,
+  t.slot_time,
+  false
+FROM generate_series(1, 30) AS s(day)
+CROSS JOIN (
+  VALUES
+    ('10:00'::time), ('11:00'::time), ('12:00'::time),
+    ('14:00'::time), ('15:00'::time), ('16:00'::time)
+) AS t(slot_time)
+WHERE EXTRACT(DOW FROM CURRENT_DATE + s.day) NOT IN (0, 6) -- пропускаем выходные
+ON CONFLICT (slot_date, slot_time) DO NOTHING;
+
+-- =====================================================
+-- Тестовые пользователи (пароль: Test1234)
 -- =====================================================
 INSERT INTO users (email, password_hash, first_name, last_name, phone) VALUES
-('client1@test.ru', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Александр', 'Петров',   '+79001234567'),
-('client2@test.ru', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Мария',     'Иванова',   '+79007654321'),
-('client3@test.ru', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Дмитрий',   'Сидоров',   '+79009876543');
+('client1@test.ru', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Александр', 'Петров',  '+79001234567'),
+('client2@test.ru', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Мария',     'Иванова', '+79007654321'),
+('client3@test.ru', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Дмитрий',   'Сидоров', '+79009876543')
+ON CONFLICT (email) DO NOTHING;
 
--- Роли для тестовых пользователей (client)
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r
 WHERE u.email IN ('client1@test.ru', 'client2@test.ru', 'client3@test.ru')
-  AND r.name = 'client';
+  AND r.name = 'client'
+ON CONFLICT DO NOTHING;
 
 -- =====================================================
 -- Тестовые заказы
 -- =====================================================
-INSERT INTO orders (user_id, category_id, problem_description, final_price, appointment_date, appointment_time, is_custom_device) VALUES
-(2, 13, 'Разбил экран, нужна замена стекла',         2500,  '2026-02-20', '10:00', false),
-(2, 15, 'Телефон не заряжается',                     2800,  '2026-02-22', '12:00', false),
-(3, 26, 'Ноутбук перегревается и выключается',       2500,  '2026-02-25', '14:00', false),
-(3, 14, 'Аккумулятор держит 1 час',                  4500,  '2026-02-26', '11:00', false),
-(2, 17, 'Телефон упал в воду, не включается',        6500,  '2026-02-28', '15:00', false);
+INSERT INTO orders (user_id, category_id, problem_description, final_price, appointment_date, appointment_time, is_custom_device)
+SELECT u.id, c.id, 'Разбил экран, нужна замена стекла', 2500, CURRENT_DATE - 26, '10:00', false
+FROM users u, categories c
+WHERE u.email = 'client2@test.ru' AND c.name = 'Замена стекла' AND EXISTS (
+  SELECT 1 FROM categories p WHERE p.id = c.parent_id AND p.name = 'Apple'
+)
+AND NOT EXISTS (SELECT 1 FROM orders WHERE user_id = u.id AND problem_description = 'Разбил экран, нужна замена стекла');
 
--- Пометим слоты как занятые для этих заказов
-UPDATE time_slots SET is_booked = true, order_id = (SELECT id FROM orders LIMIT 1 OFFSET 0)
-WHERE slot_date = '2026-02-20' AND slot_time = '10:00:00';
+INSERT INTO orders (user_id, category_id, problem_description, final_price, appointment_date, appointment_time, is_custom_device)
+SELECT u.id, c.id, 'Телефон не заряжается', 2800, CURRENT_DATE - 24, '12:00', false
+FROM users u, categories c
+WHERE u.email = 'client2@test.ru' AND c.name = 'Ремонт разъёма зарядки' AND EXISTS (
+  SELECT 1 FROM categories p WHERE p.id = c.parent_id AND p.name = 'Apple'
+)
+AND NOT EXISTS (SELECT 1 FROM orders WHERE user_id = u.id AND problem_description = 'Телефон не заряжается');
 
--- =====================================================
--- История статусов для заказов
--- =====================================================
-
--- Заказ 1 — Выдан (полный цикл)
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 1, id, 2, '2026-02-20 10:00:00' FROM statuses WHERE name = 'Новая';
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 1, id, 2, '2026-02-20 11:00:00' FROM statuses WHERE name = 'Принята';
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 1, id, 2, '2026-02-20 14:00:00' FROM statuses WHERE name = 'В процессе';
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 1, id, 2, '2026-02-21 10:00:00' FROM statuses WHERE name = 'Готово';
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 1, id, 2, '2026-02-21 15:00:00' FROM statuses WHERE name = 'Выдан';
-
--- Заказ 2 — Готово
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 2, id, 3, '2026-02-22 12:00:00' FROM statuses WHERE name = 'Новая';
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 2, id, 3, '2026-02-22 13:00:00' FROM statuses WHERE name = 'Принята';
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 2, id, 3, '2026-02-23 10:00:00' FROM statuses WHERE name = 'В процессе';
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 2, id, 3, '2026-02-23 16:00:00' FROM statuses WHERE name = 'Готово';
-
--- Заказ 3 — В процессе
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 3, id, 4, '2026-02-25 14:00:00' FROM statuses WHERE name = 'Новая';
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 3, id, 4, '2026-02-25 15:00:00' FROM statuses WHERE name = 'Принята';
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 3, id, 4, '2026-02-26 09:00:00' FROM statuses WHERE name = 'В процессе';
-
--- Заказ 4 — Ожидание запчастей
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 4, id, 4, '2026-02-26 11:00:00' FROM statuses WHERE name = 'Новая';
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 4, id, 4, '2026-02-26 12:00:00' FROM statuses WHERE name = 'Принята';
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 4, id, 4, '2026-02-27 10:00:00' FROM statuses WHERE name = 'Ожидание запчастей';
-
--- Заказ 5 — Новая
-INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
-SELECT 5, id, 3, '2026-02-28 15:00:00' FROM statuses WHERE name = 'Новая';
+INSERT INTO orders (user_id, category_id, problem_description, final_price, appointment_date, appointment_time, is_custom_device)
+SELECT u.id, c.id, 'Ноутбук перегревается и выключается', 2500, CURRENT_DATE - 21, '14:00', false
+FROM users u, categories c
+WHERE u.email = 'client3@test.ru' AND c.name = 'Чистка системы охлаждения' AND EXISTS (
+  SELECT 1 FROM categories p WHERE p.id = c.parent_id AND p.name = 'Lenovo'
+)
+AND NOT EXISTS (SELECT 1 FROM orders WHERE user_id = u.id AND problem_description = 'Ноутбук перегревается и выключается');
 
 -- =====================================================
--- Отзывы (только для завершённых заказов 1)
+-- Статусы заказов
 -- =====================================================
-INSERT INTO reviews (order_id, user_id, rating, comment) VALUES
-(1, 2, 5, 'Отличный сервис! Заменили стекло за 2 часа, всё аккуратно. Цена приятно удивила. Рекомендую!');
+INSERT INTO order_status_history (order_id, status_id, changed_by, changed_at)
+SELECT o.id, s.id, o.user_id, o.created_at
+FROM orders o, statuses s
+WHERE s.name = 'Новая'
+  AND NOT EXISTS (
+    SELECT 1 FROM order_status_history h WHERE h.order_id = o.id AND h.status_id = s.id
+  );
+
+-- =====================================================
+-- Отзыв для первого завершённого заказа
+-- =====================================================
+INSERT INTO reviews (order_id, user_id, rating, comment)
+SELECT o.id, o.user_id, 5, 'Отличный сервис! Заменили стекло за 2 часа, всё аккуратно.'
+FROM orders o
+WHERE o.problem_description = 'Разбил экран, нужна замена стекла'
+  AND NOT EXISTS (SELECT 1 FROM reviews r WHERE r.order_id = o.id);

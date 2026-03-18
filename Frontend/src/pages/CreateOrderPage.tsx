@@ -1,17 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styles from '../components/CreateOrderPage.module.css';
 import SiteHeader from '../components/SiteHeader';
+import styles from '../components/CreateOrderPage.module.css';
 import { categoriesApi, ordersApi, slotsApi } from '../services/api';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import type { Category, TimeSlot } from '../types';
 
-const CATEGORY_ICONS: Record<string, string> = {
-  'Смартфоны': '📱', 'Ноутбуки': '💻', 'Планшеты': '📟',
-  'Телевизоры': '📺', 'Бытовая техника': '🏠', 'Другое': '🔧',
-};
-
+// Дополнительные услуги (временные, пока не пришли с бэка)
 interface ExtraService {
   id: number;
   name: string;
@@ -21,33 +17,11 @@ interface ExtraService {
 }
 
 const DEFAULT_EXTRA_SERVICES: ExtraService[] = [
-  { id: 101, name: 'Срочный ремонт', description: 'За 1 час (+20% от итоговой суммы)', price: '+20%', type: 'percentage' },
+  { id: 101, name: 'Срочный ремонт', description: 'За 1 час', price: '+20%', type: 'percentage' },
   { id: 102, name: 'Выезд мастера', description: 'На дом или в офис', price: 500, type: 'fixed' },
   { id: 103, name: 'Резервное копирование', description: 'Сохранение данных', price: 1000, type: 'fixed' },
   { id: 104, name: 'Настройка после ремонта', description: 'Полная настройка устройства', price: 0, type: 'free' },
 ];
-
-// ================================================
-// Вспомогательные функции для календаря
-// ================================================
-
-/** Сколько дней в месяце */
-function daysInMonth(year: number, month: number): number {
-  return new Date(year, month + 1, 0).getDate();
-}
-
-/** День недели первого числа месяца (0=Пн..6=Вс) */
-function firstDayOfMonth(year: number, month: number): number {
-  return (new Date(year, month, 1).getDay() + 6) % 7;
-}
-
-function toDateStr(year: number, month: number, day: number): string {
-  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-}
-
-function formatMonthLabel(year: number, month: number): string {
-  return new Date(year, month, 1).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
-}
 
 export default function CreateOrderPage() {
   const navigate = useNavigate();
@@ -55,37 +29,41 @@ export default function CreateOrderPage() {
 
   const [currentStep, setCurrentStep] = useState(1);
 
-  // Шаг 1
+  // Шаг 1 — устройство
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [subCategories, setSubCategories] = useState<Category[]>([]);
   const [selectedSubCategory, setSelectedSubCategory] = useState<Category | null>(null);
   const [isCustomDevice, setIsCustomDevice] = useState(false);
   const [customDevice, setCustomDevice] = useState('');
+  const [carMake, setCarMake] = useState('');
+  const [carModel, setCarModel] = useState('');
+  const [carYear, setCarYear] = useState('');
+  // 'auto' | 'electronics' | null
+  const [serviceMode, setServiceMode] = useState<'auto' | 'electronics' | null>(null);
 
-  // Шаг 2
+  // Шаг 2 — проблема
   const [problemDescription, setProblemDescription] = useState('');
   const [photos, setPhotos] = useState<File[]>([]);
 
-  // Шаг 3
+  // Шаг 3 — услуги
   const [services, setServices] = useState<Category[]>([]);
   const [selectedServices, setSelectedServices] = useState<Category[]>([]);
 
-  // Шаг 4
-  const [extraServices, setExtraServices] = useState<ExtraService[]>(DEFAULT_EXTRA_SERVICES);
+  // Шаг 4 — дополнительные услуги
   const [selectedExtraServices, setSelectedExtraServices] = useState<ExtraService[]>([]);
 
-  // Шаг 5 — Календарь
-  const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
-  const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth());
-  const [availableDatesSet, setAvailableDatesSet] = useState<Set<string>>(new Set());
-  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [extraServices, setExtraServices] = useState<ExtraService[]>(DEFAULT_EXTRA_SERVICES);
+
+  // Шаг 5 — время
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [freeSlots, setFreeSlots] = useState<TimeSlot[]>([]);
+  const [calendarDays, setCalendarDays] = useState<{ date: number; dateStr: string; dayOfWeek: string; isPast: boolean; isEmpty?: boolean }[]>([]);
 
-  // Стоимость
+  // Общая стоимость
   const [totalPrice, setTotalPrice] = useState(0);
+
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
@@ -95,34 +73,32 @@ export default function CreateOrderPage() {
 
 
 
-  const CATEGORY_ORDER = ['Смартфоны', 'Ноутбуки', 'Планшеты', 'Телевизоры', 'Бытовая техника', 'Другое'];
-
   useEffect(() => {
     categoriesApi.getAll().then((tree) => {
-      const roots = tree.filter(c => c.parent_id === null);
-      roots.sort((a, b) => {
-        const ai = CATEGORY_ORDER.indexOf(a.name), bi = CATEGORY_ORDER.indexOf(b.name);
-        if (ai === -1 && bi === -1) return 0;
-        if (ai === -1) return 1; if (bi === -1) return -1;
-        return ai - bi;
-      });
-      setCategories(roots);
+      setCategories(tree.filter(c => c.parent_id === null));
     });
   }, []);
 
+  // Загружаем доп. услуги с бэка; если эндпоинта нет — используем дефолтный список
   useEffect(() => {
     api.get<ExtraService[]>('/extra-services')
-      .then(r => { if (r.data?.length) setExtraServices(r.data); })
-      .catch(() => {});
+      .then(r => { if (r.data && r.data.length > 0) setExtraServices(r.data); })
+      .catch(() => { /* бэк не поддерживает, оставляем DEFAULT_EXTRA_SERVICES */ });
   }, []);
 
   useEffect(() => {
     if (!selectedCategory) return;
-    setSelectedSubCategory(null); setSelectedServices([]); setSelectedExtraServices([]);
-    setServices([]); setTotalPrice(0);
+    setSelectedSubCategory(null);
+    setSelectedServices([]);
+    setSelectedExtraServices([]);
+    setServices([]); // сбрасываем услуги при смене категории
+    setTotalPrice(0); // сбрасываем цену
     if (selectedCategory.name === 'Другое') {
-      setIsCustomDevice(true); setSubCategories([]);
-      setServices(selectedCategory.children || []);
+      setIsCustomDevice(true);
+      setSubCategories([]);
+      // Для «Другое» услуги могут прийти как children или быть пустыми
+      const children = selectedCategory.children || [];
+      setServices(children);
     } else {
       setIsCustomDevice(false);
       setSubCategories(selectedCategory.children || []);
@@ -131,123 +107,68 @@ export default function CreateOrderPage() {
 
   useEffect(() => {
     if (!selectedSubCategory) return;
-    setSelectedServices([]);
+    setSelectedServices([]); // сбрасываем выбранные услуги при смене подкатегории
     setServices(selectedSubCategory.children || []);
   }, [selectedSubCategory]);
 
-  // ======== РАСЧЁТ СТОИМОСТИ ========
-  // Исправленная логика: срочный ремонт считается от ИТОГА (базовая + услуги + фикс. доп.услуги)
   useEffect(() => {
-    const servicesTotal = selectedServices.reduce((s, c) => s + c.base_price, 0);
-    let fixedExtra = 0;
-    let hasUrgent = false;
-
-    selectedExtraServices.forEach(s => {
-      if (s.type === 'fixed') fixedExtra += Number(s.price);
-      if (s.type === 'percentage') hasUrgent = true;
+    // Расчет стоимости
+    let base = selectedSubCategory?.base_price || selectedCategory?.base_price || 0;
+    let servicesTotal = selectedServices.reduce((sum, s) => sum + s.base_price, 0);
+    let extraTotal = 0;
+    
+    let percentageMultiplier = 1;
+    selectedExtraServices.forEach(service => {
+      if (service.type === 'percentage') {
+        // Срочный ремонт +20% применяем ко всей сумме (базовая + услуги)
+        percentageMultiplier *= 1.2;
+      } else if (service.type === 'fixed') {
+        extraTotal += typeof service.price === 'number' ? service.price : 0;
+      }
+      // Бесплатные игнорируем
     });
-
-    // Итог до процентной надбавки
-    const baseTotal = servicesTotal + fixedExtra;
-    // Срочный ремонт +20% от всего
-    const result = hasUrgent ? Math.round(baseTotal * 1.2) : baseTotal;
-    setTotalPrice(result);
+    
+    setTotalPrice(Math.round((base + servicesTotal) * percentageMultiplier + extraTotal));
   }, [selectedServices, selectedExtraServices, selectedSubCategory, selectedCategory]);
 
-  // ======== ЗАГРУЗКА ДОСТУПНЫХ ДАТ ========
-  // ВАЖНО: функция объявлена ДО useEffect который её вызывает
-  const loadAvailableDates = async (year: number, month: number) => {
-    setCalendarLoading(true);
-    setAvailableDatesSet(new Set());
-
-    const _today = new Date(); _today.setHours(0, 0, 0, 0);
-    const _twoWeeks = new Date(_today); _twoWeeks.setDate(_today.getDate() + 13);
-
-    const datesToCheck: string[] = [];
-    for (let d = 1; d <= daysInMonth(year, month); d++) {
-      const date = new Date(year, month, d);
-      if (date >= _today && date <= _twoWeeks) {
-        datesToCheck.push(toDateStr(year, month, d));
-      }
-    }
-
-    console.log('[Calendar] Checking dates:', datesToCheck);
-
-    if (datesToCheck.length === 0) {
-      setCalendarLoading(false);
-      return;
-    }
-
-    try {
-      const results = await Promise.all(
-        datesToCheck.map(ds => {
-          const timeout = new Promise<TimeSlot[]>(res => setTimeout(() => res([]), 5000));
-          const req = slotsApi.getFreeByDate(ds)
-            .then(r => Array.isArray(r) ? r : [])
-            .catch(() => [] as TimeSlot[]);
-          return Promise.race([req, timeout]);
-        })
-      );
-      const available = new Set<string>();
-      results.forEach((slots, i) => {
-        if (Array.isArray(slots) && slots.length > 0) available.add(datesToCheck[i]);
-      });
-      console.log('[Calendar] Available dates:', [...available]);
-      setAvailableDatesSet(available);
-    } catch (err) {
-      console.error('[Calendar] Error:', err);
-      setAvailableDatesSet(new Set());
-    } finally {
-      setCalendarLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (currentStep !== 5) return;
-    loadAvailableDates(calendarYear, calendarMonth);
-  }, [currentStep, calendarYear, calendarMonth]);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const twoWeeksLater = new Date(today);
+    twoWeeksLater.setDate(today.getDate() + 13);
+    const days = [];
+    // Сдвиг: (getDay()+6)%7 — Пн=0..Вс=6
+    const startDow = (today.getDay() + 6) % 7;
+    for (let i = 0; i < startDow; i++) {
+      days.push({ date: 0, dateStr: '', dayOfWeek: '', isPast: true, isEmpty: true });
+    }
+    for (let d = new Date(today); d <= twoWeeksLater; d.setDate(d.getDate() + 1)) {
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const day = d.getDate();
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      days.push({ date: day, dateStr, dayOfWeek: '', isPast: false, isEmpty: false });
+    }
+    setCalendarDays(days);
+  }, []);
 
   useEffect(() => {
     if (!selectedDate) return;
     setSelectedTime('');
-    slotsApi.getFreeByDate(selectedDate).then(data => setFreeSlots(Array.isArray(data) ? data : [])).catch(() => setFreeSlots([]));
+    slotsApi.getFreeByDate(selectedDate).then(data => setFreeSlots(data || [])).catch(() => setFreeSlots([]));
   }, [selectedDate]);
 
-  // ======== ОГРАНИЧЕНИЯ КАЛЕНДАРЯ ========
-  // Вычисляем один раз, не внутри render
-  const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
-  const twoWeeksLater = new Date(todayDate); twoWeeksLater.setDate(todayDate.getDate() + 13);
 
-  const getDayStatus = (year: number, month: number, day: number): 'past' | 'available' | 'booked' | 'future' => {
-    const d = new Date(year, month, day);
-    if (d < todayDate) return 'past';
-    if (d > twoWeeksLater) return 'future';
-    const ds = toDateStr(year, month, day);
-    // Пока грузим — показываем booked (серый), не available
-    if (calendarLoading) return 'booked';
-    return availableDatesSet.has(ds) ? 'available' : 'booked';
+  const handleServiceToggle = (service: Category) => {
+    setSelectedServices(prev =>
+      prev.find(s => s.id === service.id) ? prev.filter(s => s.id !== service.id) : [...prev, service]
+    );
   };
 
-  // Можно ли перейти на следующий месяц (если в 2-недельном окне есть дни следующего месяца)
-  const canGoNextMonth = () => {
-    const nextMonthStart = new Date(calendarYear, calendarMonth + 1, 1);
-    return nextMonthStart <= twoWeeksLater;
-  };
-
-  // Можно ли вернуться на предыдущий месяц
-  const canGoPrevMonth = () => {
-    const thisMonth = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
-    const currentlyViewing = new Date(calendarYear, calendarMonth, 1);
-    return currentlyViewing > thisMonth;
-  };
-
-
-  const handleServiceToggle = (s: Category) => {
-    setSelectedServices(prev => prev.find(x => x.id === s.id) ? prev.filter(x => x.id !== s.id) : [...prev, s]);
-  };
-
-  const handleExtraToggle = (s: ExtraService) => {
-    setSelectedExtraServices(prev => prev.find(x => x.id === s.id) ? prev.filter(x => x.id !== s.id) : [...prev, s]);
+  const handleExtraServiceToggle = (service: any) => {
+    setSelectedExtraServices(prev =>
+      prev.find(s => s.id === service.id) ? prev.filter(s => s.id !== service.id) : [...prev, service]
+    );
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,105 +176,26 @@ export default function CreateOrderPage() {
   };
 
   const handleSubmit = async () => {
-    setSubmitError(''); setLoading(true);
+    setSubmitError('');
+    setLoading(true);
     try {
       const categoryId = selectedSubCategory?.id ?? selectedCategory?.id ?? null;
       const order = await ordersApi.create({
         category_id: isCustomDevice ? null : categoryId,
-        custom_device_name: isCustomDevice ? customDevice : null,
+        custom_device_name: selectedCategory?.id === 0 ? `${carMake} ${carModel}${carYear ? ' ' + carYear : ''}` : isCustomDevice ? customDevice : null,
         problem_description: problemDescription,
         appointment_date: selectedDate,
         appointment_time: selectedTime,
         is_custom_device: isCustomDevice,
       });
-      for (const file of photos) await ordersApi.uploadPhoto(order.id, file);
+      for (const file of photos) {
+        await ordersApi.uploadPhoto(order.id, file);
+      }
       navigate('/cabinet');
     } catch (e: any) {
       setSubmitError(e.response?.data?.error || 'Ошибка при создании заявки');
       setLoading(false);
     }
-  };
-
-  // ======== РЕНДЕР КАЛЕНДАРЯ ========
-  const renderCalendar = () => {
-    const totalDays = daysInMonth(calendarYear, calendarMonth);
-    const firstDow = firstDayOfMonth(calendarYear, calendarMonth);
-    const monthLabel = formatMonthLabel(calendarYear, calendarMonth);
-
-    return (
-      <div className={styles.calendar}>
-        <div className={styles.calendarHeader}>
-          <button
-            className={styles.calendarNavBtn}
-            onClick={() => {
-              if (calendarMonth === 0) { setCalendarYear(y => y - 1); setCalendarMonth(11); }
-              else setCalendarMonth(m => m - 1);
-            }}
-            disabled={!canGoPrevMonth()}
-          >‹</button>
-          <span className={styles.calendarMonth}>{monthLabel}</span>
-          <button
-            className={styles.calendarNavBtn}
-            onClick={() => {
-              if (calendarMonth === 11) { setCalendarYear(y => y + 1); setCalendarMonth(0); }
-              else setCalendarMonth(m => m + 1);
-            }}
-            disabled={!canGoNextMonth()}
-          >›</button>
-        </div>
-
-        <div className={styles.weekDays}>
-          {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => (
-            <div key={d} className={styles.weekDay}>{d}</div>
-          ))}
-        </div>
-
-        <div className={styles.calendarGrid}>
-          {/* Пустые ячейки */}
-          {Array.from({ length: firstDow }).map((_, i) => (
-            <div key={`e-${i}`} className={styles.calendarEmpty} />
-          ))}
-
-          {/* Дни месяца */}
-          {Array.from({ length: totalDays }, (_, i) => i + 1).map(day => {
-            const ds = toDateStr(calendarYear, calendarMonth, day);
-            const status = getDayStatus(calendarYear, calendarMonth, day);
-            const isSelected = selectedDate === ds;
-            const isWeekend = ((firstDow + day - 1) % 7) >= 5;
-
-            let cls = styles.calendarDay;
-            if (status === 'past') cls += ` ${styles.past}`;
-            else if (status === 'future') cls += ` ${styles.future}`;
-            else if (status === 'booked') cls += ` ${styles.booked}`;
-            else if (status === 'available') cls += ` ${styles.available}`;
-            if (isSelected) cls += ` ${styles.selected}`;
-            if (isWeekend && status !== 'past' && status !== 'future') cls += ` ${styles.weekend}`;
-
-            return (
-              <button
-                key={day}
-                className={cls}
-                onClick={() => status === 'available' && setSelectedDate(ds)}
-                disabled={status !== 'available'}
-              >
-                <span className={styles.dayNumber}>{day}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Легенда */}
-        <div className={styles.calendarLegend}>
-          {calendarLoading
-            ? <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>⏳ Загружаем доступные даты...</span>
-            : <>
-                <span className={styles.legendItem}><span className={styles.legendDot} style={{ background: '#93c5fd' }} />Доступно</span>
-                <span className={styles.legendItem}><span className={styles.legendDot} style={{ background: '#e2e8f0' }} />Недоступно</span>
-              </>
-          }
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -362,64 +204,120 @@ export default function CreateOrderPage() {
 
       <div className={styles.createOrder}>
         <h1 className={styles.pageTitle}>ОФОРМЛЕНИЕ ЗАЯВКИ</h1>
-        <p className={styles.pageSub}>Заполните форму — мы свяжемся с вами для подтверждения</p>
 
-        <div className={styles.progressWrap}>
         <div className={styles.progressBar}>
           {['Устройство', 'Проблема', 'Услуги', 'Доп. услуги', 'Время', 'Подтверждение'].map((label, i) => (
-            <div key={label} className={`${styles.progressStep} ${currentStep === i + 1 ? styles.active : ''} ${currentStep > i + 1 ? styles.done : ''}`}>
+            <div key={label} className={`${styles.progressStep} ${currentStep >= i + 1 ? styles.active : ''}`}>
               <span className={styles.stepNumber}>{i + 1}</span>
               <span className={styles.stepLabel}>{label}</span>
             </div>
           ))}
         </div>
-        </div>{/* /progressWrap */}
 
-        <div className={styles.stepCard}>
         <div className={styles.formContainer}>
-
           {/* ШАГ 1 — Устройство */}
           {currentStep === 1 && (
             <div className={styles.step}>
-              <h2 className={styles.stepTitle}>Выберите тип устройства</h2>
-              <div className={styles.deviceTypes}>
-                {categories.map(cat => (
-                  <button key={cat.id}
-                    className={`${styles.deviceTypeBtn} ${selectedCategory?.id === cat.id ? styles.selected : ''}`}
-                    onClick={() => setSelectedCategory(cat)}>
-                    <span className={styles.deviceIcon}>{CATEGORY_ICONS[cat.name] || '🔧'}</span>
-                    <span className={styles.deviceName}>{cat.name}</span>
+              <h2 className={styles.stepTitle}>Что нужно отремонтировать?</h2>
+
+              {/* Выбор режима */}
+              {serviceMode === null && (
+                <div className={styles.modePicker}>
+                  <button className={styles.modeCard} onClick={() => {
+                    setServiceMode('auto');
+                    setSelectedCategory({ id: 0, name: 'Автомобиль', parent_id: null, base_price: 0, level: 0, created_at: '', updated_at: '' });
+                  }}>
+                    <span className={styles.modeIcon}>🚗</span>
+                    <span className={styles.modeTitle}>Автомобиль</span>
+                    <span className={styles.modeSub}>Двигатель, ходовая, электрика, кузов</span>
                   </button>
-                ))}
-              </div>
-
-              {subCategories.length > 0 && (
-                <>
-                  <h2 className={styles.stepTitle} style={{ marginTop: '2rem' }}>Уточните устройство</h2>
-                  <div className={styles.brandsGrid}>
-                    {subCategories.map(sub => (
-                      <button key={sub.id}
-                        className={`${styles.brandBtn} ${selectedSubCategory?.id === sub.id ? styles.selected : ''}`}
-                        onClick={() => setSelectedSubCategory(sub)}>
-                        <span className={styles.brandName}>{sub.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {isCustomDevice && (
-                <div className={styles.customDeviceSection}>
-                  <h2 className={styles.stepTitle} style={{ marginTop: '2rem' }}>Опишите устройство</h2>
-                  <input type="text" className={styles.input}
-                    placeholder="Введите название устройства"
-                    value={customDevice} onChange={(e) => setCustomDevice(e.target.value)} />
+                  <button className={styles.modeCard} onClick={() => {
+                    setServiceMode('electronics');
+                    setSelectedCategory(null);
+                  }}>
+                    <span className={styles.modeIcon}>📱</span>
+                    <span className={styles.modeTitle}>Электроника</span>
+                    <span className={styles.modeSub}>Смартфоны, ноутбуки, телевизоры, техника</span>
+                  </button>
                 </div>
               )}
 
+              {/* Авто — поля */}
+              {serviceMode === 'auto' && (
+                <div className={styles.carFields}>
+                  <button className={styles.modeBack} onClick={() => { setServiceMode(null); setSelectedCategory(null); setCarMake(''); setCarModel(''); setCarYear(''); }}>
+                    ← Назад
+                  </button>
+                  <div className={styles.carFieldsRow}>
+                    <div>
+                      <label className={styles.carLabel}>Марка *</label>
+                      <input className={styles.input} type="text" placeholder="Toyota, BMW, Lada..." value={carMake} onChange={e=>setCarMake(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={styles.carLabel}>Модель *</label>
+                      <input className={styles.input} type="text" placeholder="Camry, X5, Vesta..." value={carModel} onChange={e=>setCarModel(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={styles.carLabel}>Год</label>
+                      <input className={styles.input} type="text" placeholder="2018" value={carYear} onChange={e=>setCarYear(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Электроника — список категорий */}
+              {serviceMode === 'electronics' && (
+                <>
+                  <button className={styles.modeBack} onClick={() => { setServiceMode(null); setSelectedCategory(null); }}>
+                    ← Назад
+                  </button>
+                  <div className={styles.deviceTypes}>
+                    {categories.filter(c => c.name !== 'Автомобили').map(cat => (
+                      <button
+                        key={cat.id}
+                        className={`${styles.deviceTypeBtn} ${selectedCategory?.id === cat.id ? styles.selected : ''}`}
+                        onClick={() => setSelectedCategory(cat)}
+                      >
+                        <span className={styles.deviceName}>{cat.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {subCategories.length > 0 && (
+                    <>
+                      <h2 className={styles.stepTitle} style={{ marginTop: '1.5rem' }}>Уточните модель</h2>
+                      <div className={styles.brandsGrid}>
+                        {subCategories.map(sub => (
+                          <button
+                            key={sub.id}
+                            className={`${styles.brandBtn} ${selectedSubCategory?.id === sub.id ? styles.selected : ''}`}
+                            onClick={() => setSelectedSubCategory(sub)}
+                          >
+                            <span className={styles.brandName}>{sub.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {isCustomDevice && (
+                    <div className={styles.customDeviceSection}>
+                      <h2 className={styles.stepTitle} style={{ marginTop: '1.5rem' }}>Опишите устройство</h2>
+                      <input type="text" className={styles.input} placeholder="Введите название устройства"
+                        value={customDevice} onChange={e => setCustomDevice(e.target.value)} />
+                    </div>
+                  )}
+                </>
+              )}
+
               <div className={styles.stepButtons}>
-                <button className={styles.nextBtn} onClick={() => setCurrentStep(2)}
-                  disabled={!selectedCategory || (isCustomDevice && !customDevice)}>
+                <button
+                  className={styles.nextBtn}
+                  onClick={() => setCurrentStep(2)}
+                  disabled={
+                    serviceMode === null ||
+                    (serviceMode === 'auto' && (!carMake || !carModel)) ||
+                    (serviceMode === 'electronics' && (!selectedCategory || (isCustomDevice && !customDevice)))
+                  }
+                >
                   Далее
                 </button>
               </div>
@@ -430,19 +328,23 @@ export default function CreateOrderPage() {
           {currentStep === 2 && (
             <div className={styles.step}>
               <h2 className={styles.stepTitle}>Опишите проблему</h2>
-
-              {/* Статичный textarea со скроллом */}
               <textarea
                 className={styles.textarea}
+                rows={5}
                 placeholder="Подробно опишите, что случилось с устройством..."
                 value={problemDescription}
                 onChange={(e) => setProblemDescription(e.target.value)}
               />
-
               <div className={styles.photoUpload}>
                 <h3>Фотографии поломки (необязательно)</h3>
                 <label className={styles.photoLabel}>
-                  <input type="file" multiple accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    style={{ display: 'none' }}
+                  />
                   <span className={styles.photoBtn}>📷 Загрузить фото</span>
                 </label>
                 {photos.length > 0 && (
@@ -450,17 +352,26 @@ export default function CreateOrderPage() {
                     {photos.map((photo, index) => (
                       <div key={index} className={styles.photoItem}>
                         <span>📸 {photo.name}</span>
-                        <button className={styles.removePhoto}
-                          onClick={() => setPhotos(photos.filter((_, i) => i !== index))}>✕</button>
+                        <button
+                          className={styles.removePhoto}
+                          onClick={() => setPhotos(photos.filter((_, i) => i !== index))}
+                        >
+                          ✕
+                        </button>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-
               <div className={styles.stepButtons}>
                 <button className={styles.prevBtn} onClick={() => setCurrentStep(1)}>Назад</button>
-                <button className={styles.nextBtn} onClick={() => setCurrentStep(3)} disabled={!problemDescription}>Далее</button>
+                <button
+                  className={styles.nextBtn}
+                  onClick={() => setCurrentStep(3)}
+                  disabled={!problemDescription}
+                >
+                  Далее
+                </button>
               </div>
             </div>
           )}
@@ -470,13 +381,15 @@ export default function CreateOrderPage() {
             <div className={styles.step}>
               <h2 className={styles.stepTitle}>Выберите необходимые услуги</h2>
               {services.length === 0 ? (
-                <p style={{ color: '#888', marginBottom: '2rem' }}>Услуги для данной категории не найдены</p>
+                <p style={{ color: '#888' }}>Услуги для данной категории не найдены</p>
               ) : (
                 <div className={styles.servicesList}>
                   {services.map(service => (
-                    <div key={service.id}
+                    <div
+                      key={service.id}
                       className={`${styles.serviceItem} ${selectedServices.find(s => s.id === service.id) ? styles.selected : ''}`}
-                      onClick={() => handleServiceToggle(service)}>
+                      onClick={() => handleServiceToggle(service)}
+                    >
                       <div className={styles.serviceInfo}>
                         <span className={styles.serviceName}>{service.name}</span>
                         <span className={styles.servicePrice}>{service.base_price} ₽</span>
@@ -494,8 +407,7 @@ export default function CreateOrderPage() {
               </div>
               <div className={styles.stepButtons}>
                 <button className={styles.prevBtn} onClick={() => setCurrentStep(2)}>Назад</button>
-                <button className={styles.nextBtn} onClick={() => setCurrentStep(4)}
-                  disabled={selectedServices.length === 0}>Далее</button>
+                <button className={styles.nextBtn} onClick={() => setCurrentStep(4)} disabled={selectedServices.length === 0}>Далее</button>
               </div>
             </div>
           )}
@@ -506,18 +418,18 @@ export default function CreateOrderPage() {
               <h2 className={styles.stepTitle}>Дополнительные услуги</h2>
               <div className={styles.extraServicesList}>
                 {extraServices.map(service => (
-                  <div key={service.id}
+                  <div
+                    key={service.id}
                     className={`${styles.extraServiceItem} ${selectedExtraServices.find(s => s.id === service.id) ? styles.selected : ''}`}
-                    onClick={() => handleExtraToggle(service)}>
+                    onClick={() => handleExtraServiceToggle(service)}
+                  >
                     <div className={styles.extraServiceInfo}>
                       <span className={styles.extraServiceName}>{service.name}</span>
                       <span className={styles.extraServiceDesc}>{service.description}</span>
                     </div>
                     <div className={styles.extraServiceRight}>
                       <span className={styles.extraServicePrice}>
-                        {service.type === 'free' ? 'Бесплатно'
-                          : typeof service.price === 'number' ? `${service.price} ₽`
-                          : service.price}
+                        {typeof service.price === 'number' ? `${service.price} ₽` : service.price}
                       </span>
                       <div className={styles.serviceCheck}>
                         {selectedExtraServices.find(s => s.id === service.id) && '✓'}
@@ -527,7 +439,7 @@ export default function CreateOrderPage() {
                 ))}
               </div>
               <div className={styles.totalPrice}>
-                <span>Итоговая стоимость:</span>
+                <span>Текущая стоимость:</span>
                 <span className={styles.price}>{totalPrice} ₽</span>
               </div>
               <div className={styles.stepButtons}>
@@ -541,22 +453,48 @@ export default function CreateOrderPage() {
           {currentStep === 5 && (
             <div className={styles.step}>
               <h2 className={styles.stepTitle}>Выберите удобную дату</h2>
-              {renderCalendar()}
+              <div className={styles.calendar}>
+                <div className={styles.calendarHeader}>
+                  <span className={styles.calendarMonth}>Ближайшие 2 недели</span>
+                </div>
+                <div className={styles.weekDays}>
+                  {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => (
+                    <div key={d} className={styles.weekDay}>{d}</div>
+                  ))}
+                </div>
+                <div className={styles.calendarGrid}>
+                  {calendarDays.map((day, idx) =>
+                    day.isEmpty ? (
+                      <div key={`empty-${idx}`} className={styles.calendarEmpty} />
+                    ) : (
+                      <button
+                        key={day.dateStr}
+                        className={`${styles.calendarDay} ${styles.available} ${selectedDate === day.dateStr ? styles.selected : ''}`}
+                        onClick={() => setSelectedDate(day.dateStr)}
+                      >
+                        {day.date}
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
 
               {selectedDate && (
-                <div className={styles.timeSection}>
-                  <h3 className={styles.timeTitle}>
-                    🕐 Доступное время —{' '}
-                    {new Date(selectedDate + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-                  </h3>
+                <div style={{ marginTop: '1.5rem' }}>
+                  <h3>Свободное время на {selectedDate}</h3>
                   {freeSlots.length === 0 ? (
-                    <p className={styles.noSlots}>На эту дату нет свободных слотов.</p>
+                    <p style={{ color: '#888', marginTop: '0.5rem' }}>
+                      На эту дату нет свободных слотов. Попробуйте другой день.
+                    </p>
                   ) : (
-                    <div className={styles.timeSlots}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
                       {freeSlots.map(slot => (
-                        <button key={slot.id}
-                          className={`${styles.timeSlot} ${selectedTime === slot.slot_time ? styles.timeSlotSelected : ''}`}
-                          onClick={() => setSelectedTime(slot.slot_time)}>
+                        <button
+                          key={slot.id}
+                          className={`${styles.calendarDay} ${selectedTime === slot.slot_time ? styles.selected : styles.available}`}
+                          style={{ width: 'auto', padding: '0.5rem 1rem' }}
+                          onClick={() => setSelectedTime(slot.slot_time)}
+                        >
                           {slot.slot_time.slice(0, 5)}
                         </button>
                       ))}
@@ -567,8 +505,13 @@ export default function CreateOrderPage() {
 
               <div className={styles.stepButtons}>
                 <button className={styles.prevBtn} onClick={() => setCurrentStep(4)}>Назад</button>
-                <button className={styles.nextBtn} onClick={() => setCurrentStep(6)}
-                  disabled={!selectedDate || !selectedTime}>Далее</button>
+                <button
+                  className={styles.nextBtn}
+                  onClick={() => setCurrentStep(6)}
+                  disabled={!selectedDate || !selectedTime}
+                >
+                  Далее
+                </button>
               </div>
             </div>
           )}
@@ -589,7 +532,9 @@ export default function CreateOrderPage() {
                 {selectedServices.length > 0 && (
                   <div className={styles.confirmSection}>
                     <h3>Услуги</h3>
-                    {selectedServices.map(s => <p key={s.id}>{s.name} — {s.base_price} ₽</p>)}
+                    {selectedServices.map(s => (
+                      <p key={s.id}>{s.name} — {s.base_price} ₽</p>
+                    ))}
                   </div>
                 )}
                 {selectedExtraServices.length > 0 && (
@@ -597,7 +542,7 @@ export default function CreateOrderPage() {
                     <h3>Дополнительные услуги</h3>
                     {selectedExtraServices.map(s => (
                       <p key={s.id}>
-                        {s.name} — {s.type === 'free' ? 'Бесплатно' : typeof s.price === 'number' ? `${s.price} ₽` : s.price}
+                        {s.name} — {typeof s.price === 'number' ? `${s.price} ₽` : s.price}
                       </p>
                     ))}
                   </div>
@@ -605,8 +550,8 @@ export default function CreateOrderPage() {
                 <div className={styles.confirmSection}>
                   <h3>Дата и время визита</h3>
                   <p>
-                    {new Date(selectedDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    {' '}в {selectedTime.slice(0, 5)}
+                    {new Date(selectedDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}{' '}
+                    в {selectedTime.slice(0, 5)}
                   </p>
                 </div>
                 <div className={styles.confirmTotal}>
@@ -623,7 +568,6 @@ export default function CreateOrderPage() {
               </div>
             </div>
           )}
-        </div>{/* /stepCard */}
         </div>
       </div>
     </div>
