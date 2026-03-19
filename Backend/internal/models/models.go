@@ -4,8 +4,6 @@ import (
 	"time"
 )
 
-// --- Users ---
-
 type User struct {
 	ID           int       `db:"id" json:"id"`
 	Email        string    `db:"email" json:"email"`
@@ -18,15 +16,11 @@ type User struct {
 	UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
 }
 
-// --- Roles ---
-
 type Role struct {
 	ID          int    `db:"id" json:"id"`
 	Name        string `db:"name" json:"name"`
 	Description string `db:"description" json:"description"`
 }
-
-// --- UserRoles ---
 
 type UserRole struct {
 	ID         int       `db:"id" json:"id"`
@@ -34,8 +28,6 @@ type UserRole struct {
 	RoleID     int       `db:"role_id" json:"role_id"`
 	AssignedAt time.Time `db:"assigned_at" json:"assigned_at"`
 }
-
-// --- Categories ---
 
 type Category struct {
 	ID        int        `db:"id" json:"id"`
@@ -48,16 +40,12 @@ type Category struct {
 	Children  []Category `db:"-" json:"children,omitempty"`
 }
 
-// --- Statuses ---
-
 type Status struct {
 	ID          int    `db:"id" json:"id"`
 	Name        string `db:"name" json:"name"`
 	Description string `db:"description" json:"description"`
 	ColorCode   string `db:"color_code" json:"color_code"`
 }
-
-// --- Orders ---
 
 type Order struct {
 	ID                 int       `db:"id" json:"id"`
@@ -71,15 +59,11 @@ type Order struct {
 	IsCustomDevice     bool      `db:"is_custom_device" json:"is_custom_device"`
 	CreatedAt          time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt          time.Time `db:"updated_at" json:"updated_at"`
-
-	// Joined fields — *string чтобы принимать NULL из LEFT JOIN
-	StatusName   *string `db:"status_name" json:"status_name,omitempty"`
-	ColorCode    *string `db:"color_code" json:"color_code,omitempty"`
-	UserName     *string `db:"user_name" json:"user_name,omitempty"`
-	CategoryName *string `db:"category_name" json:"category_name,omitempty"`
+	StatusName         *string   `db:"status_name" json:"status_name,omitempty"`
+	ColorCode          *string   `db:"color_code" json:"color_code,omitempty"`
+	UserName           *string   `db:"user_name" json:"user_name,omitempty"`
+	CategoryName       *string   `db:"category_name" json:"category_name,omitempty"`
 }
-
-// --- TimeSlots ---
 
 type TimeSlot struct {
 	ID        int       `db:"id" json:"id"`
@@ -90,8 +74,6 @@ type TimeSlot struct {
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }
 
-// --- Photos ---
-
 type Photo struct {
 	ID         int       `db:"id" json:"id"`
 	OrderID    int       `db:"order_id" json:"order_id"`
@@ -100,8 +82,6 @@ type Photo struct {
 	UploadedAt time.Time `db:"uploaded_at" json:"uploaded_at"`
 }
 
-// --- Reviews ---
-
 type Review struct {
 	ID        int       `db:"id" json:"id"`
 	OrderID   int       `db:"order_id" json:"order_id"`
@@ -109,26 +89,20 @@ type Review struct {
 	Rating    int       `db:"rating" json:"rating"`
 	Comment   string    `db:"comment" json:"comment"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
-
-	// Joined fields
-	UserName *string `db:"user_name" json:"user_name,omitempty"`
+	UserName  *string   `db:"user_name" json:"user_name,omitempty"`
 }
-
-// --- OrderStatusHistory ---
 
 type OrderStatusHistory struct {
-	ID        int       `db:"id" json:"id"`
-	OrderID   int       `db:"order_id" json:"order_id"`
-	StatusID  int       `db:"status_id" json:"status_id"`
-	ChangedBy int       `db:"changed_by" json:"changed_by"`
-	ChangedAt time.Time `db:"changed_at" json:"changed_at"`
-
-	// Joined fields
-	StatusName    *string `db:"status_name" json:"status_name,omitempty"`
-	ChangedByName *string `db:"changed_by_name" json:"changed_by_name,omitempty"`
+	ID            int       `db:"id" json:"id"`
+	OrderID       int       `db:"order_id" json:"order_id"`
+	StatusID      int       `db:"status_id" json:"status_id"`
+	ChangedBy     int       `db:"changed_by" json:"changed_by"`
+	ChangedAt     time.Time `db:"changed_at" json:"changed_at"`
+	StatusName    *string   `db:"status_name" json:"status_name,omitempty"`
+	ChangedByName *string   `db:"changed_by_name" json:"changed_by_name,omitempty"`
 }
 
-// --- DTO (Data Transfer Objects) ---
+// DTO
 
 type RegisterRequest struct {
 	Email     string `json:"email" validate:"required,email"`
@@ -181,6 +155,20 @@ type CreateSlotRequest struct {
 
 type UpdateAvatarRequest struct {
 	AvatarID int `json:"avatar_id" validate:"required,min=1,max=10"`
+}
+
+// UpdateProfileRequest — PUT /auth/profile
+type UpdateProfileRequest struct {
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Phone     string `json:"phone"`
+	Email     string `json:"email"`
+}
+
+// ChangePasswordRequest — PUT /auth/password
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
 }
 
 type JWTClaims struct {

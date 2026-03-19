@@ -40,6 +40,15 @@ export const authApi = {
 
   updateAvatar: (avatarId: number) =>
     api.put<{ avatar_id: number }>('/auth/avatar', { avatar_id: avatarId }).then(r => r.data),
+
+  updateProfile: (data: { first_name?: string; last_name?: string; phone?: string; email?: string }) =>
+    api.put<User>('/auth/profile', data).then(r => r.data),
+
+  changePassword: (data: { current_password: string; new_password: string }) =>
+    api.put('/auth/password', data).then(r => r.data),
+
+  requestPasswordReset: (email: string) =>
+    api.post('/auth/reset-password', { email }).then(r => r.data),
 };
 
 // =====================

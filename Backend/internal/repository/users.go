@@ -42,7 +42,29 @@ func (r *UserRepository) FindByID(id int) (*models.User, error) {
 }
 
 func (r *UserRepository) UpdateAvatar(userID, avatarID int) error {
-	_, err := r.db.Exec(`UPDATE users SET avatar_id = $1 WHERE id = $2`, avatarID, userID)
+	_, err := r.db.Exec(`UPDATE users SET avatar_id = $1, updated_at = NOW() WHERE id = $2`, avatarID, userID)
+	return err
+}
+
+func (r *UserRepository) UpdateProfile(userID int, req *models.UpdateProfileRequest) error {
+	_, err := r.db.Exec(`
+		UPDATE users SET
+			first_name = CASE WHEN $2 != '' THEN $2 ELSE first_name END,
+			last_name  = CASE WHEN $3 != '' THEN $3 ELSE last_name  END,
+			phone      = CASE WHEN $4 != '' THEN $4 ELSE phone      END,
+			email      = CASE WHEN $5 != '' THEN $5 ELSE email      END,
+			updated_at = NOW()
+		WHERE id = $1`,
+		userID, req.FirstName, req.LastName, req.Phone, req.Email,
+	)
+	return err
+}
+
+func (r *UserRepository) UpdatePassword(userID int, hash string) error {
+	_, err := r.db.Exec(
+		`UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
+		hash, userID,
+	)
 	return err
 }
 

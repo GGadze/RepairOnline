@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
 import styles from '../components/CabinetPage.module.css';
-import { ordersApi, reviewsApi } from '../services/api';
+import { ordersApi, reviewsApi, authApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import type { Order, OrderStatusHistory, Review } from '../types';
 
@@ -43,6 +43,24 @@ export default function CabinetPage() {
   const [loading, setLoading] = useState(true);
 
 
+  // Редактирование профиля
+  const [editMode, setEditMode] = useState(false);
+  const [editFirst, setEditFirst] = useState('');
+  const [editLast,  setEditLast]  = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError,  setEditError]  = useState('');
+  const [editOk,     setEditOk]     = useState(false);
+  // Смена пароля
+  const [passMode,    setPassMode]    = useState(false);
+  const [passCurrent, setPassCurrent] = useState('');
+  const [passNew,     setPassNew]     = useState('');
+  const [passConfirm, setPassConfirm] = useState('');
+  const [passSaving,  setPassSaving]  = useState(false);
+  const [passError,   setPassError]   = useState('');
+  const [passOk,      setPassOk]      = useState(false);
+
   // Аватар
   const [selectedAvatar, setSelectedAvatar] = useState(() => {
     return localStorage.getItem('user-avatar') || '👤';
@@ -53,6 +71,8 @@ export default function CabinetPage() {
     setSelectedAvatar(emoji);
     localStorage.setItem('user-avatar', emoji);
     setShowAvatarPicker(false);
+    // Уведомляем шапку — она обновит аватар мгновенно
+    window.dispatchEvent(new Event('avatar-changed'));
   };
 
   // Модалка отзыва
@@ -89,6 +109,38 @@ export default function CabinetPage() {
 
 
 
+
+  const openEdit = () => {
+    setEditFirst(user?.first_name || '');
+    setEditLast(user?.last_name || '');
+    setEditPhone(user?.phone || '');
+    setEditEmail(user?.email || '');
+    setEditError(''); setEditOk(false);
+    setEditMode(true);
+  };
+
+  const saveProfile = async () => {
+    setEditSaving(true); setEditError(''); setEditOk(false);
+    try {
+      await authApi.updateProfile({ first_name: editFirst, last_name: editLast, phone: editPhone, email: editEmail });
+      setEditOk(true); setEditMode(false);
+    } catch (e: any) {
+      setEditError(e.response?.data?.error || 'Ошибка сохранения');
+    } finally { setEditSaving(false); }
+  };
+
+  const savePassword = async () => {
+    if (passNew !== passConfirm) { setPassError('Пароли не совпадают'); return; }
+    if (passNew.length < 6) { setPassError('Минимум 6 символов'); return; }
+    setPassSaving(true); setPassError(''); setPassOk(false);
+    try {
+      await authApi.changePassword({ current_password: passCurrent, new_password: passNew });
+      setPassOk(true); setPassMode(false);
+      setPassCurrent(''); setPassNew(''); setPassConfirm('');
+    } catch (e: any) {
+      setPassError(e.response?.data?.error || 'Неверный текущий пароль');
+    } finally { setPassSaving(false); }
+  };
 
   const handleReviewClick = (order: Order) => {
     setReviewOrder(order);
@@ -132,215 +184,283 @@ export default function CabinetPage() {
     <div className={styles.page}>
       <SiteHeader alwaysVisible />
 
-      <div className={styles.cabinet}>
-        <div className={styles.profileHeader}>
-          <div
-            className={styles.profileAvatar}
-            onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-            style={{ cursor: 'pointer', position: 'relative' }}
-            title="Нажмите для смены аватара"
-          >
-            {selectedAvatar}
-            <span className={styles.editBadge}>✏</span>
-          </div>
-          {showAvatarPicker && (
-            <div className={styles.avatarPicker}>
-              <div className={styles.avatarPickerTitle}>Выберите аватар:</div>
-              {AVATAR_EMOJIS.map(emoji => (
-                <button
-                  key={emoji}
-                  onClick={() => handleAvatarSelect(emoji)}
-                  style={{ fontSize: '1.6rem', background: selectedAvatar === emoji ? '#f59e0b20' : 'transparent', border: selectedAvatar === emoji ? '2px solid #f59e0b' : '2px solid transparent', borderRadius: '6px', cursor: 'pointer', padding: '4px', transition: 'all 0.15s' }}
-                >
-                  {emoji}
-                </button>
+      <div className={styles.layout}>
+
+        {/* ── ЛЕВАЯ КОЛОНКА ── */}
+        <aside className={styles.sidebar}>
+
+          {/* Профиль */}
+          <div className={styles.profileCard}>
+            <div className={styles.profileTop}>
+              <div className={styles.avatarWrap} onClick={() => setShowAvatarPicker(!showAvatarPicker)}>
+                <span className={styles.avatarEmoji}>{selectedAvatar}</span>
+                <span className={styles.avatarEdit}>✏</span>
+              </div>
+              {showAvatarPicker && (
+                <div className={styles.avatarPicker}>
+                  <div className={styles.avatarPickerTitle}>Выберите аватар</div>
+                  <div className={styles.avatarGrid}>
+                    {AVATAR_EMOJIS.map(emoji => (
+                      <button key={emoji} onClick={() => handleAvatarSelect(emoji)}
+                        className={`${styles.avatarOpt} ${selectedAvatar === emoji ? styles.avatarOptActive : ''}`}>
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className={styles.profileMeta}>
+                <div className={styles.profileName}>{user?.first_name} {user?.last_name}</div>
+                <div className={styles.profileEmail}>{user?.email}</div>
+              </div>
+            </div>
+
+            <div className={styles.profileDetails}>
+              {[
+                { label: 'Телефон', val: user?.phone || '—' },
+                { label: 'Email', val: user?.email || '—' },
+                { label: 'Дата регистрации', val: user?.created_at ? formatDate(user.created_at) : '—' },
+              ].map(row => (
+                <div key={row.label} className={styles.profileRow}>
+                  <span className={styles.profileRowLabel}>{row.label}</span>
+                  <span className={styles.profileRowVal}>{row.val}</span>
+                </div>
               ))}
             </div>
-          )}
-          <h1 className={styles.profileTitle}>ПРОФИЛЬ</h1>
-        </div>
-
-        <div className={styles.profileInfo}>
-          <div className={styles.infoCard}>
-            <h2 className={styles.infoTitle}>Личные данные</h2>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Ф.И.:</span>
-              <span className={styles.infoValue}>{user?.first_name} {user?.last_name}</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Email:</span>
-              <span className={styles.infoValue}>{user?.email}</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Телефон:</span>
-              <span className={styles.infoValue}>{user?.phone}</span>
-            </div>
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>Дата регистрации:</span>
-              <span className={styles.infoValue}>{user?.created_at ? formatDate(user.created_at) : '—'}</span>
+            {editOk && <div className={styles.editSuccess}>Данные сохранены</div>}
+            {passOk && <div className={styles.editSuccess}>Пароль изменён</div>}
+            <div className={styles.profileActions}>
+              <button className={styles.editBtn} onClick={openEdit}>Редактировать профиль</button>
+              <button className={styles.editBtnSecondary} onClick={() => { setPassMode(true); setPassError(''); setPassOk(false); }}>Сменить пароль</button>
             </div>
           </div>
 
-          <div className={styles.infoCard}>
-            <h2 className={styles.infoTitle}>Статистика</h2>
-            <div className={styles.statsGrid}>
-              <div className={styles.statItem}>
-                <span className={styles.statNumber}>{orders.length}</span>
-                <span className={styles.statLabel}>Всего ремонтов</span>
+          {/* Статистика */}
+          <div className={styles.statsRow}>
+            {[
+              { n: orders.length, label: 'Всего' },
+              { n: activeCount,   label: 'В работе' },
+              { n: completedCount,label: 'Завершено' },
+            ].map(s => (
+              <div key={s.label} className={styles.statBox}>
+                <span className={styles.statN}>{s.n}</span>
+                <span className={styles.statL}>{s.label}</span>
               </div>
-              <div className={styles.statItem}>
-                <span className={styles.statNumber}>{activeCount}</span>
-                <span className={styles.statLabel}>В работе</span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.statNumber}>{completedCount}</span>
-                <span className={styles.statLabel}>Завершено</span>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
 
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '2rem' }}>Загрузка заказов...</div>
-        ) : (
-          <div className={styles.mainContent}>
-            <div className={styles.leftColumn}>
-              <div className={styles.sectionCard}>
-                <h2 className={styles.sectionTitle}>История заказов</h2>
-                {orders.length === 0 ? (
-                  <p style={{ padding: '1rem', color: '#888' }}>У вас пока нет заказов</p>
+          {/* История заказов */}
+          <div className={styles.ordersCard}>
+            <div className={styles.ordersCardHead}>История заказов</div>
+            {loading ? (
+              <div className={styles.ordersEmpty}>Загрузка...</div>
+            ) : orders.length === 0 ? (
+              <div className={styles.ordersEmpty}>Заказов пока нет</div>
+            ) : (
+              <ul className={styles.ordersList}>
+                {orders.map(order => (
+                  <li key={order.id}
+                    className={`${styles.orderItem} ${selectedOrder?.id === order.id ? styles.orderItemActive : ''}`}
+                    onClick={() => setSelectedOrder(order)}>
+                    <div className={styles.orderItemInner}>
+                      <span className={styles.orderItemName}>
+                        {order.category_name || order.custom_device_name || 'Устройство'}
+                      </span>
+                      <span className={styles.orderItemStatus}
+                        style={{ color: order.color_code || '#94a3b8' }}>
+                        {order.status_name}
+                      </span>
+                    </div>
+                    {isCompleted(order) && (
+                      <div className={styles.orderItemMeta}>
+                        {reviewsMap[order.id] ? (
+                          <span className={styles.orderItemRated}>★ Оценён</span>
+                        ) : (
+                          <button className={styles.orderItemReviewBtn}
+                            onClick={e => { e.stopPropagation(); handleReviewClick(order); }}>
+                            Оставить отзыв
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <button className={styles.newOrderBtn} onClick={() => { window.scrollTo(0,0); navigate('/create-order'); }}>
+            + Новая заявка
+          </button>
+        </aside>
+
+        {/* ── ПРАВАЯ КОЛОНКА ── */}
+        <main className={styles.main}>
+          {!selectedOrder ? (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>🔧</div>
+              <div className={styles.emptyTitle}>Выберите заказ</div>
+              <div className={styles.emptyHint}>Нажмите на заказ из списка слева</div>
+            </div>
+          ) : (
+            <>
+              {/* Шапка заказа */}
+              <div className={styles.orderHeader}>
+                <div>
+                  <div className={styles.orderHeaderLabel}>Заказ #{selectedOrder.id}</div>
+                  <div className={styles.orderHeaderDevice}>
+                    {selectedOrder.category_name || selectedOrder.custom_device_name || 'Устройство'}
+                  </div>
+                </div>
+                <span className={styles.orderHeaderStatus} style={{ color: selectedOrder.color_code || '#94a3b8', borderColor: selectedOrder.color_code || '#94a3b8' }}>
+                  {selectedOrder.status_name}
+                </span>
+              </div>
+
+              {/* Детали */}
+              <div className={styles.detailsCard}>
+                <div className={styles.detailsGrid}>
+                  {[
+                    { label: 'Устройство', val: selectedOrder.category_name || selectedOrder.custom_device_name || '—' },
+                    { label: 'Проблема', val: selectedOrder.problem_description },
+                    { label: 'Дата визита', val: `${selectedOrder.appointment_date.split('T')[0]} в ${selectedOrder.appointment_time.slice(0,5)}` },
+                    { label: 'Стоимость', val: selectedOrder.final_price ? `${selectedOrder.final_price.toLocaleString()} ₽` : 'Уточняется' },
+                  ].map(row => (
+                    <div key={row.label} className={styles.detailRow}>
+                      <span className={styles.detailLabel}>{row.label}</span>
+                      <span className={row.label === 'Стоимость' ? styles.detailPrice : styles.detailVal}>
+                        {row.val}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Таймлайн статусов */}
+              <div className={styles.timelineCard}>
+                <div className={styles.timelineHead}>Статус ремонта</div>
+                {history.length === 0 ? (
+                  <div className={styles.timelineEmpty}>Нет данных</div>
                 ) : (
-                  <ul className={styles.ordersList}>
-                    {orders.map(order => (
-                      <li key={order.id}
-                        className={`${styles.orderItem} ${selectedOrder?.id === order.id ? styles.selected : ''}`}
-                        onClick={() => setSelectedOrder(order)}
-                      >
-                        <div className={styles.orderInfo}>
-                          <span className={styles.orderName}>
-                            <span className={styles.orderIcon}>🔧</span>
-                            {order.category_name || order.custom_device_name || 'Устройство'}
-                          </span>
-                          <span className={getOrderStatusClass(order.status_name)}
-                            style={{ color: order.color_code, borderColor: order.color_code }}>
-                            {order.status_name}
+                  <div className={styles.timeline}>
+                    {history.map((h, i) => (
+                      <div key={h.id} className={`${styles.timelineItem} ${i === history.length - 1 ? styles.timelineItemLast : ''}`}>
+                        <div className={styles.timelineLine}>
+                          <div className={styles.timelineDot} style={{ background: i === history.length - 1 ? '#f59e0b' : '#3b82f6' }} />
+                          {i < history.length - 1 && <div className={styles.timelineTrack} />}
+                        </div>
+                        <div className={styles.timelineContent}>
+                          <span className={styles.timelineStatus}>{h.status_name}</span>
+                          <span className={styles.timelineDate}>
+                            {new Date(h.changed_at).toLocaleString('ru-RU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
                           </span>
                         </div>
-                        {isCompleted(order) && (
-                          <div className={styles.orderReview}>
-                            {reviewsMap[order.id] ? (
-                              <div className={styles.reviewStars}>
-                                <StarRating rating={reviewsMap[order.id].rating} readonly />
-                              </div>
-                            ) : (
-                              <button className={styles.reviewBtn}
-                                onClick={(e) => { e.stopPropagation(); handleReviewClick(order); }}>
-                                Оцените ремонт
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </li>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 )}
               </div>
-            </div>
 
-            <div className={styles.rightColumn}>
-              {selectedOrder && (
-                <>
-                  <div className={styles.sectionCard}>
-                    <h2 className={styles.sectionTitle}>Детали заказа #{selectedOrder.id}</h2>
-                    <div className={styles.orderDetails}>
-                      <div className={styles.detailRow}>
-                        <span className={styles.detailLabel}>Устройство:</span>
-                        <span className={styles.detailValue}>
-                          {selectedOrder.category_name || selectedOrder.custom_device_name || '—'}
-                        </span>
-                      </div>
-                      <div className={styles.detailRow}>
-                        <span className={styles.detailLabel}>Проблема:</span>
-                        <span className={styles.detailValue}>{selectedOrder.problem_description}</span>
-                      </div>
-                      <div className={styles.detailRow}>
-                        <span className={styles.detailLabel}>Дата визита:</span>
-                        <span className={styles.detailValue}>
-                          {selectedOrder.appointment_date.split('T')[0]} в {selectedOrder.appointment_time.slice(0,5)}
-                        </span>
-                      </div>
-                      <div className={styles.detailRow}>
-                        <span className={styles.detailLabel}>Стоимость:</span>
-                        <span className={styles.detailPrice}>
-                          {selectedOrder.final_price ? `${selectedOrder.final_price} ₽` : 'Уточняется'}
-                        </span>
-                      </div>
-                      {reviewsMap[selectedOrder.id] && (
-                        <div className={styles.detailRow}>
-                          <span className={styles.detailLabel}>Ваш отзыв:</span>
-                          <div className={styles.detailReview}>
-                            <StarRating rating={reviewsMap[selectedOrder.id].rating} readonly />
-                            <p className={styles.reviewText}>{reviewsMap[selectedOrder.id].comment}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+              {/* Отзыв если есть */}
+              {reviewsMap[selectedOrder.id] && (
+                <div className={styles.reviewCard}>
+                  <div className={styles.reviewCardHead}>Ваш отзыв</div>
+                  <div className={styles.reviewStarsRow}>
+                    <StarRating rating={reviewsMap[selectedOrder.id].rating} readonly />
                   </div>
-
-                  <div className={styles.sectionCard}>
-                    <h2 className={styles.sectionTitle}>История статусов</h2>
-                    <div className={styles.statusList}>
-                      {history.length === 0 ? (
-                        <p style={{ color: '#888' }}>Нет данных</p>
-                      ) : (
-                        history.map((h) => (
-                          <div key={h.id} className={styles.statusItem}>
-                            <div className={styles.statusDot} />
-                            <div>
-                              <span className={styles.statusText}>{h.status_name}</span>
-                              <span style={{ fontSize: '0.75rem', color: '#888', marginLeft: '0.5rem' }}>
-                                {new Date(h.changed_at).toLocaleString('ru-RU')}
-                              </span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </>
+                  {reviewsMap[selectedOrder.id].comment && (
+                    <p className={styles.reviewCardText}>{reviewsMap[selectedOrder.id].comment}</p>
+                  )}
+                </div>
               )}
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </main>
       </div>
 
-      {/* Модальное окно отзыва */}
+      {/* Модалка редактирования профиля */}
+      {editMode && (
+        <div className={styles.modalOverlay} onClick={() => setEditMode(false)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalTitle}>Редактировать профиль</div>
+            <div className={styles.editGrid}>
+              <div className={styles.editField}>
+                <label className={styles.editLabel}>Имя</label>
+                <input className={styles.editInput} value={editFirst} onChange={e => setEditFirst(e.target.value)} placeholder="Имя" />
+              </div>
+              <div className={styles.editField}>
+                <label className={styles.editLabel}>Фамилия</label>
+                <input className={styles.editInput} value={editLast} onChange={e => setEditLast(e.target.value)} placeholder="Фамилия" />
+              </div>
+              <div className={styles.editField} style={{ gridColumn: '1/-1' }}>
+                <label className={styles.editLabel}>Email</label>
+                <input className={styles.editInput} type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="email@example.com" />
+              </div>
+              <div className={styles.editField} style={{ gridColumn: '1/-1' }}>
+                <label className={styles.editLabel}>Телефон</label>
+                <input className={styles.editInput} value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="+7 (999) 000-00-00" />
+              </div>
+            </div>
+            {editError && <div className={styles.reviewError}>{editError}</div>}
+            <div className={styles.modalButtons}>
+              <button className={styles.cancelBtn} onClick={() => setEditMode(false)}>Отмена</button>
+              <button className={styles.submitReviewBtn} onClick={saveProfile} disabled={editSaving}>
+                {editSaving ? 'Сохранение...' : 'Сохранить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модалка смены пароля */}
+      {passMode && (
+        <div className={styles.modalOverlay} onClick={() => setPassMode(false)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalTitle}>Сменить пароль</div>
+            <div className={styles.editGrid} style={{ gridTemplateColumns: '1fr' }}>
+              <div className={styles.editField}>
+                <label className={styles.editLabel}>Текущий пароль</label>
+                <input className={styles.editInput} type="password" value={passCurrent} onChange={e => setPassCurrent(e.target.value)} placeholder="••••••" />
+              </div>
+              <div className={styles.editField}>
+                <label className={styles.editLabel}>Новый пароль</label>
+                <input className={styles.editInput} type="password" value={passNew} onChange={e => setPassNew(e.target.value)} placeholder="Минимум 6 символов" />
+              </div>
+              <div className={styles.editField}>
+                <label className={styles.editLabel}>Повторите новый пароль</label>
+                <input className={styles.editInput} type="password" value={passConfirm} onChange={e => setPassConfirm(e.target.value)} placeholder="Ещё раз" />
+              </div>
+            </div>
+            {passError && <div className={styles.reviewError}>{passError}</div>}
+            <div className={styles.modalButtons}>
+              <button className={styles.cancelBtn} onClick={() => setPassMode(false)}>Отмена</button>
+              <button className={styles.submitReviewBtn} onClick={savePassword} disabled={passSaving}>
+                {passSaving ? 'Сохранение...' : 'Изменить пароль'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модалка отзыва */}
       {showReviewModal && (
         <div className={styles.modalOverlay} onClick={() => setShowReviewModal(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h2 className={styles.modalTitle}>Оцените ремонт</h2>
-            <p className={styles.modalSubtitle}>
-              {reviewOrder?.category_name || reviewOrder?.custom_device_name || 'Устройство'}
-            </p>
-
-            <div className={styles.modalRating}>
-              <span className={styles.ratingLabel}>Ваша оценка:</span>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalTitle}>Оценить ремонт</div>
+            <div className={styles.modalDevice}>{reviewOrder?.category_name || reviewOrder?.custom_device_name}</div>
+            <div className={styles.ratingLabel}>Оценка</div>
+            <div className={styles.starsContainer}>
               <StarRating rating={reviewRating} onRatingChange={setReviewRating} />
             </div>
-
-            <div className={styles.modalComment}>
-              <label className={styles.commentLabel}>Комментарий (необязательно)</label>
-              <textarea className={styles.commentInput} rows={4} value={reviewComment}
-                onChange={(e) => setReviewComment(e.target.value)}
-                placeholder="Расскажите о качестве ремонта..." />
-            </div>
-
-            {reviewError && <div style={{ color: 'red', marginBottom: '0.5rem' }}>{reviewError}</div>}
-
+            <div className={styles.commentLabel}>Комментарий</div>
+            <textarea className={styles.commentInput} rows={4}
+              value={reviewComment} onChange={e => setReviewComment(e.target.value)}
+              placeholder="Расскажите о качестве ремонта..." />
+            {reviewError && <div className={styles.reviewError}>{reviewError}</div>}
             <div className={styles.modalButtons}>
               <button className={styles.cancelBtn} onClick={() => setShowReviewModal(false)}>Отмена</button>
               <button className={styles.submitReviewBtn} onClick={handleReviewSubmit} disabled={reviewLoading}>
-                {reviewLoading ? 'Отправка...' : 'Отправить отзыв'}
+                {reviewLoading ? 'Отправка...' : 'Отправить'}
               </button>
             </div>
           </div>

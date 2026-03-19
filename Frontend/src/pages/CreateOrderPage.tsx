@@ -272,7 +272,13 @@ export default function CreateOrderPage() {
                     ← Назад
                   </button>
                   <div className={styles.deviceTypes}>
-                    {categories.filter(c => c.name !== 'Автомобили').map(cat => (
+                    {[...categories.filter(c => c.name !== 'Автомобили')].sort((a, b) => {
+                      const order = ['Смартфоны','Ноутбуки','Планшеты','Телевизоры','Бытовая техника','Другое'];
+                      const ai = order.indexOf(a.name); const bi = order.indexOf(b.name);
+                      if (ai === -1 && bi === -1) return 0;
+                      if (ai === -1) return 1; if (bi === -1) return -1;
+                      return ai - bi;
+                    }).map(cat => (
                       <button
                         key={cat.id}
                         className={`${styles.deviceTypeBtn} ${selectedCategory?.id === cat.id ? styles.selected : ''}`}
@@ -395,7 +401,7 @@ export default function CreateOrderPage() {
                         <span className={styles.servicePrice}>{service.base_price} ₽</span>
                       </div>
                       <div className={styles.serviceCheck}>
-                        {selectedServices.find(s => s.id === service.id) && '✓'}
+                        {selectedServices.find(s => s.id === service.id) ? '✓' : ''}
                       </div>
                     </div>
                   ))}
@@ -431,8 +437,8 @@ export default function CreateOrderPage() {
                       <span className={styles.extraServicePrice}>
                         {typeof service.price === 'number' ? `${service.price} ₽` : service.price}
                       </span>
-                      <div className={styles.serviceCheck}>
-                        {selectedExtraServices.find(s => s.id === service.id) && '✓'}
+                      <div className={styles.extraCheck}>
+                        {selectedExtraServices.find(s => s.id === service.id) ? '✓' : ''}
                       </div>
                     </div>
                   </div>

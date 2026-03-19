@@ -21,12 +21,10 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
-
 	resp, err := h.authService.Register(&req)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-
 	return c.Status(fiber.StatusCreated).JSON(resp)
 }
 
@@ -36,31 +34,26 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
-
 	resp, err := h.authService.Login(&req)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
-
 	return c.JSON(resp)
 }
 
 // GET /api/auth/me
 func (h *AuthHandler) Me(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(int)
-
 	user, err := h.authService.GetUserByID(userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
 	}
-
 	return c.JSON(user)
 }
 
 // PUT /api/auth/avatar
 func (h *AuthHandler) UpdateAvatar(c *fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
-
 	var req models.UpdateAvatarRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
@@ -68,10 +61,50 @@ func (h *AuthHandler) UpdateAvatar(c *fiber.Ctx) error {
 	if req.AvatarID < 1 || req.AvatarID > 10 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "avatar_id must be between 1 and 10"})
 	}
-
 	if err := h.authService.UpdateAvatar(userID, req.AvatarID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-
 	return c.JSON(fiber.Map{"avatar_id": req.AvatarID})
+}
+
+// PUT /api/auth/profile
+func (h *AuthHandler) UpdateProfile(c *fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+	var req models.UpdateProfileRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+	user, err := h.authService.UpdateProfile(userID, &req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(user)
+}
+
+// PUT /api/auth/password
+func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+	var req models.ChangePasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+	if len(req.NewPassword) < 6 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Минимум 6 символов"})
+	}
+	if err := h.authService.ChangePassword(userID, &req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"ok": true})
+}
+
+// POST /api/auth/reset-password
+func (h *AuthHandler) RequestPasswordReset(c *fiber.Ctx) error {
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+	// Реализация через email/sms — будет позже
+	return c.JSON(fiber.Map{"ok": true, "message": "Если email зарегистрирован — придёт инструкция"})
 }

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { getAvatarEmoji } from '../utils/avatarUtils';
 import s from '../components/SiteHeader.module.css';
 
 const NAV = [
@@ -34,8 +33,23 @@ export default function SiteHeader({ refs, alwaysVisible = false, activeId }: Si
   const [visible,  setVisible]  = useState(true);
   const [lastY,    setLastY]    = useState(0);
   const [scrolled, setScrolled] = useState(false);
+  const [avatarEmoji, setAvatarEmoji] = useState('👤');
 
-  const emoji = isAuthenticated ? getAvatarEmoji(user?.avatar_id) : '👤';
+  // Читаем при монтировании и при смене авторизации
+  useEffect(() => {
+    setAvatarEmoji(localStorage.getItem('user-avatar') || '👤');
+  }, [isAuthenticated]);
+
+  // Слушаем кастомное событие — мгновенное обновление в той же вкладке
+  useEffect(() => {
+    const sync = () => setAvatarEmoji(localStorage.getItem('user-avatar') || '👤');
+    window.addEventListener('avatar-changed', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener('avatar-changed', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
 
   useEffect(() => {
     if (alwaysVisible) { setVisible(true); return; }
@@ -83,7 +97,7 @@ export default function SiteHeader({ refs, alwaysVisible = false, activeId }: Si
     >
       <div className={s.inner}>
         <div className={s.logo} onClick={() => navigate('/')}>
-          <div className={s.logoMark}>🔧</div>
+          <div className={s.logoMark}>АМ</div>
           <div>
             <div className={s.logoText}>АвтоМастер</div>
             <div className={s.logoSub}>Авто &amp; Электроника</div>
@@ -106,7 +120,7 @@ export default function SiteHeader({ refs, alwaysVisible = false, activeId }: Si
             <button className={s.logoutBtn} onClick={() => logout()}>Выйти</button>
           )}
           <button className={s.avatar} onClick={() => { window.scrollTo(0,0); navigate(isAuthenticated ? '/cabinet' : '/auth'); }}>
-            <span className={isAuthenticated ? s.avatarAuth : s.avatarGuest}>{emoji}</span>
+            <span className={isAuthenticated ? s.avatarAuth : s.avatarGuest}>{isAuthenticated ? avatarEmoji : '👤'}</span>
           </button>
         </div>
       </div>
