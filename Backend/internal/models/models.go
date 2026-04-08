@@ -11,7 +11,7 @@ type User struct {
 	FirstName    string    `db:"first_name" json:"first_name"`
 	LastName     string    `db:"last_name" json:"last_name"`
 	Phone        string    `db:"phone" json:"phone"`
-	AvatarID     int       `db:"avatar_id" json:"avatar_id"`
+	AvatarID     *int      `db:"avatar_id" json:"avatar_id,omitempty"`
 	CreatedAt    time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
 }
@@ -110,6 +110,7 @@ type RegisterRequest struct {
 	FirstName string `json:"first_name" validate:"required"`
 	LastName  string `json:"last_name"`
 	Phone     string `json:"phone" validate:"required"`
+	CaptchaToken   string `json:"captcha_token"`
 }
 
 type LoginRequest struct {

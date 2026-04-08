@@ -4,11 +4,16 @@ import SiteHeader from '../components/SiteHeader';
 import s from '../components/AuthPage.module.css';
 import { authApi } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
+import { useRef } from 'react';
 
 export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated } = useAuthStore();
+
+  const captchaRef = useRef<HCaptcha>(null);
+  const [captchaToken, setCaptchaToken] = useState('');
 
   // isLogin=true → форма справа, инфо слева
   // isLogin=false → форма слева, инфо справа
@@ -63,36 +68,55 @@ export default function AuthPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    if (isLogin) {
-      if (!email || !password) { setError('Заполните все поля'); return; }
-      setLoading(true);
-      try {
-        const data = await authApi.login({ email, password });
-        const payload = JSON.parse(atob(data.token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-        login(data.user, data.token, payload.role as 'client'|'admin');
-        setSuccess('Добро пожаловать!');
-        setTimeout(() => { window.scrollTo(0,0); navigate(from, { replace: true }); }, 600);
-      } catch (e: any) {
-        setError(e.response?.data?.error || 'Неверный email или пароль');
-      } finally { setLoading(false); }
-    } else {
-      if (!email || !password || !confirm || !firstName || !phone) { setError('Заполните обязательные поля'); return; }
-      if (password !== confirm) { setError('Пароли не совпадают'); return; }
-      if (password.length < 6) { setError('Минимум 6 символов'); return; }
-      setLoading(true);
-      try {
-        const data = await authApi.register({ email, password, first_name: firstName, last_name: lastName, phone });
-        const payload = JSON.parse(atob(data.token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-        login(data.user, data.token, payload.role as 'client'|'admin');
-        setSuccess('Аккаунт создан!');
-        setTimeout(() => { window.scrollTo(0,0); navigate(from, { replace: true }); }, 600);
-      } catch (e: any) {
-        setError(e.response?.data?.error || 'Ошибка регистрации');
-      } finally { setLoading(false); }
-    }
-  };
+  e.preventDefault();
+  setError('');
+  if (isLogin) {
+    if (!email || !password) { setError('Заполните все поля'); return; }
+    if (!captchaToken) { setError('Пожалуйста, пройдите проверку капчи'); return; }
+    setLoading(true);
+    try {
+      const data = await authApi.login({ email, password });
+      const payload = JSON.parse(atob(data.token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+      login(data.user, data.token, payload.role as 'client'|'admin');
+      setSuccess('Добро пожаловать!');
+      setTimeout(() => { window.scrollTo(0,0); navigate(from, { replace: true }); }, 600);
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'Неверный email или пароль');
+    } finally { setLoading(false); }
+  } else {
+    if (!email || !password || !confirm || !firstName || !phone) { setError('Заполните обязательные поля'); return; }
+
+    // 1. Телефон
+    const phoneClean = phone.replace(/\s/g, '');
+    if (!/^\+7\d{10}$/.test(phoneClean)) { setError('Телефон должен начинаться с +7 и содержать 10 цифр после'); return; }
+
+    // 2. Email
+    if (!/^[^\s@]+@[^\s@]+\.(ru|com|net|org|рф)$/i.test(email)) { setError('Введите корректный email (например, ivan@mail.ru)'); return; }
+
+    // 3. Имя и фамилия
+    if (!/^[a-zA-Zа-яёА-ЯЁ\-]+$/.test(firstName)) { setError('Имя может содержать только буквы'); return; }
+    if (lastName && !/^[a-zA-Zа-яёА-ЯЁ\-]+$/.test(lastName)) { setError('Фамилия может содержать только буквы'); return; }
+
+    // 4. Пароль
+    if (password.length < 6) { setError('Минимум 6 символов'); return; }
+    if (!/[A-ZА-ЯЁ]/.test(password)) { setError('Пароль должен содержать хотя бы одну заглавную букву'); return; }
+    if (!/\d/.test(password)) { setError('Пароль должен содержать хотя бы одну цифру'); return; }
+
+    if (password !== confirm) { setError('Пароли не совпадают'); return; }
+    if (!captchaToken) { setError('Пожалуйста, пройдите проверку капчи'); return; }
+
+    setLoading(true);
+    try {
+      const data = await authApi.register({ email, password, first_name: firstName, last_name: lastName, phone, captcha_token: captchaToken });
+      const payload = JSON.parse(atob(data.token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+      login(data.user, data.token, payload.role as 'client'|'admin');
+      setSuccess('Аккаунт создан!');
+      setTimeout(() => { window.scrollTo(0,0); navigate(from, { replace: true }); }, 600);
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'Ошибка регистрации');
+    } finally { setLoading(false); }
+  }
+};
 
   return (
     <div className={s.page}>
@@ -225,7 +249,10 @@ export default function AuthPage() {
                 <div className={s.field}>
                   <label className={s.label}>Телефон *</label>
                   <input className={s.input} type="tel" placeholder="+7 (999) 000-00-00"
-                    value={phone} onChange={e => setPhone(e.target.value)}/>
+                    value={phone} onChange={e => {
+                    const val = e.target.value;
+                    if (/^[+\d\s]*$/.test(val)) setPhone(val);
+                  }}/>
                 </div>
               )}
 
@@ -254,6 +281,15 @@ export default function AuthPage() {
                     placeholder="Ещё раз"
                     value={confirm} onChange={e => setConfirm(e.target.value)}/>
                 </div>
+              )}
+
+              {!isLogin && (
+                <HCaptcha
+                  sitekey="0ddeb29a-6a48-4594-ae0a-4a920a4a7970"
+                  onVerify={(token) => setCaptchaToken(token)}
+                  onExpire={() => setCaptchaToken('')}
+                  ref={captchaRef}
+                />
               )}
 
               <button type="submit" className={s.submit} disabled={loading}>
