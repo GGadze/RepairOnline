@@ -1,7 +1,11 @@
 package services
 
 import (
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/url"
+	"os"
 	"time"
 
 	"github.com/GGadze/RepairOnline/internal/models"
@@ -33,6 +37,9 @@ func (s *AuthService) Register(req *models.RegisterRequest) (*models.AuthRespons
 	if err != nil {
 		return nil, errors.New("failed to hash password")
 	}
+	if err := verifyCaptcha(req.CaptchaToken, os.Getenv("HCAPTCHA_SECRET")); err != nil {
+    	return nil, errors.New("captcha verification failed")
+	}	
 	user := &models.User{
 		Email:        req.Email,
 		PasswordHash: string(hash),
@@ -123,4 +130,26 @@ func (s *AuthService) generateToken(user *models.User, role string) (string, err
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(s.jwtSecret))
+}
+
+func verifyCaptcha(token, secret string) error {
+    resp, err := http.PostForm("https://hcaptcha.com/siteverify", url.Values{
+        "secret":   {secret},
+        "response": {token},
+    })
+    if err != nil {
+        return err
+    }
+    defer resp.Body.Close()
+
+    var result struct {
+        Success bool `json:"success"`
+    }
+    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+        return err
+    }
+    if !result.Success {
+        return errors.New("captcha failed")
+    }
+    return nil
 }
