@@ -1,6 +1,4 @@
-/* ══════════════════════════════════════════════
-   БАЗОВЫЕ ПЕРЕМЕННЫЕ
-══════════════════════════════════════════════ */
+
 .page {
   --bg:        #1a2235;
   --bg2:       #202b3d;
@@ -55,9 +53,6 @@
 }
 .ctaGhost:hover { color: var(--text); border-color: var(--amber); transform: translateX(3px); }
 
-/* ══════════════════════════════════════════════
-   ШАПКА СЕКЦИИ (общие)
-══════════════════════════════════════════════ */
 .sectionInner { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
 .sectionLabel {
   display: inline-block;
@@ -80,9 +75,7 @@
 }
 .actionNote { font-size: 0.88rem; color: var(--text3); }
 
-/* ══════════════════════════════════════════════
-   HERO
-══════════════════════════════════════════════ */
+
 .hero {
   padding-top: 64px;
   background: var(--bg);
@@ -221,9 +214,6 @@
 .factUnit { font-size: 1rem; font-weight: 600; color: var(--amber); }
 .factLabel { font-size: 0.95rem; color: var(--text2); line-height: 1.4; }
 
-/* ══════════════════════════════════════════════
-   АВТО — АСИММЕТРИЧНАЯ СЕТКА
-══════════════════════════════════════════════ */
 .autoSection {
   background: var(--bg2);
   border-top: 1px solid var(--border);
@@ -285,9 +275,6 @@
 }
 .autoCardDesc { font-size: 1rem; color: var(--text2); line-height: 1.65; }
 
-/* ══════════════════════════════════════════════
-   ЭЛЕКТРОНИКА
-══════════════════════════════════════════════ */
 .techSection {
   background: var(--bg);
   border-top: 1px solid var(--border);
@@ -345,9 +332,6 @@
 .priceVal  { font-size: 1.05rem; font-weight: 700; color: var(--amber); white-space: nowrap; margin-left: 16px; }
 .priceNote { padding: 10px 20px; font-size: 0.78rem; color: var(--text3); border-top: 1px solid var(--border); }
 
-/* ══════════════════════════════════════════════
-   О МАСТЕРЕ
-══════════════════════════════════════════════ */
 .aboutSection {
   background: var(--bg2);
   border-top: 1px solid var(--border);
@@ -399,9 +383,6 @@
   flex-shrink: 0; margin-top: 8px;
 }
 
-/* ══════════════════════════════════════════════
-   КОНТАКТЫ
-══════════════════════════════════════════════ */
 .contactsSection {
   background: var(--bg);
   border-top: 1px solid var(--border);
@@ -426,9 +407,6 @@
 .contactLabel { font-size: 0.75rem; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
 .contactVal { font-size: 1.08rem; color: var(--text); line-height: 1.5; white-space: pre-line; }
 
-/* ══════════════════════════════════════════════
-   FOOTER
-══════════════════════════════════════════════ */
 .footer {
   background: #0f1624;
   border-top: 1px solid var(--border);
@@ -450,9 +428,6 @@
 .footerLink:hover { color: var(--text); }
 .footerCopy { font-size: 0.8rem; color: var(--text3); }
 
-/* ══════════════════════════════════════════════
-   АДАПТИВ
-══════════════════════════════════════════════ */
 
 /* ── Двухколоночный layout секции электроники ── */
 .techLayout {

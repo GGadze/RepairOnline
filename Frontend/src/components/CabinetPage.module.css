@@ -32,9 +32,7 @@
   align-items: start;
 }
 
-/* ══════════════════════════
-   SIDEBAR
-══════════════════════════ */
+/* SIDEBAR*/
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -215,9 +213,7 @@
 }
 .newOrderBtn:hover { background: #fbbf24; transform: translateY(-1px); }
 
-/* ══════════════════════════
-   MAIN — правая колонка
-══════════════════════════ */
+/* MAIN — правая колонка*/
 .main {
   display: flex;
   flex-direction: column;
@@ -337,9 +333,7 @@
 .starFilled { color: var(--amber); }
 .starEmpty  { color: var(--border2); }
 
-/* ══════════════════════════
-   МОДАЛКА ОТЗЫВА
-══════════════════════════ */
+/*МОДАЛКА ОТЗЫВА*/
 .modalOverlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.65);

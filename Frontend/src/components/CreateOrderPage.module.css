@@ -31,9 +31,7 @@
   margin: 0 0 4px; letter-spacing: -0.3px;
 }
 
-/* ══════════════════════════
-   ПРОГРЕСС-БАР
-══════════════════════════ */
+/* ПРОГРЕСС-БАР */
 .progressBar {
   display: flex; align-items: center; justify-content: space-between;
   background: var(--bg2); border: 1px solid var(--border);
@@ -76,9 +74,7 @@
 }
 .progressStep.done .stepLabel { color: var(--green); }
 
-/* ══════════════════════════
-   КАРТОЧКА ШАГА
-══════════════════════════ */
+/* КАРТОЧКА ШАГА*/
 .formContainer {
   background: var(--bg2); border: 1px solid var(--border);
   border-radius: 12px; padding: 40px 48px;
@@ -100,9 +96,7 @@
   background: var(--amber); border-radius: 2px; flex-shrink: 0;
 }
 
-/* ══════════════════════════
-   ШАГ 1 — ВЫБОР ТИПА
-══════════════════════════ */
+/*ШАГ 1 — ВЫБОР ТИПА*/
 .modePicker {
   display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
   margin-bottom: 8px;
@@ -176,9 +170,7 @@
 
 .customDeviceSection { margin-top: 20px; }
 
-/* ══════════════════════════
-   ОБЩИЕ ИНПУТЫ
-══════════════════════════ */
+/*ОБЩИЕ ИНПУТЫ*/
 .input {
   width: 100%; padding: 11px 14px; box-sizing: border-box;
   background: var(--bg3); border: 1px solid var(--border);
@@ -189,9 +181,7 @@
 .input:focus { outline: none; border-color: var(--amber); }
 .input::placeholder { color: var(--text3); }
 
-/* ══════════════════════════
-   ШАГ 2 — ОПИСАНИЕ
-══════════════════════════ */
+/* ШАГ 2 — ОПИСАНИЕ*/
 .textarea {
   width: 100%; height: 130px; padding: 12px 14px;
   box-sizing: border-box;
@@ -234,9 +224,7 @@
 }
 .removePhoto:hover { background: var(--red); color: white; }
 
-/* ══════════════════════════
-   ШАГ 3 — УСЛУГИ
-══════════════════════════ */
+/*ШАГ 3 — УСЛУГИ */
 .servicesList {
   display: flex; flex-direction: column; gap: 8px;
   max-height: 420px; overflow-y: auto; margin-bottom: 20px;
@@ -271,9 +259,7 @@
   color: #0f1624;
 }
 
-/* ══════════════════════════
-   ШАГ 4 — ДОП. УСЛУГИ
-══════════════════════════ */
+/*ШАГ 4 — ДОП. УСЛУГИ*/
 .extraServicesList {
   display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px;
 }
@@ -302,9 +288,7 @@
 .totalPrice span:first-child { font-size: 0.9rem; color: var(--text2); }
 .price { font-size: 1.5rem; font-weight: 900; color: var(--amber); }
 
-/* ══════════════════════════
-   ШАГ 5 — КАЛЕНДАРЬ
-══════════════════════════ */
+/* ШАГ 5 — КАЛЕНДАРЬ*/
 .calendar {
   background: var(--bg3); border: 1px solid var(--border);
   border-radius: 10px; padding: 18px; margin-bottom: 14px;
@@ -400,9 +384,7 @@
   color: #0f1624 !important; font-weight: 700;
 }
 
-/* ══════════════════════════
-   ШАГ 6 — ПОДТВЕРЖДЕНИЕ
-══════════════════════════ */
+/*ШАГ 6 — ПОДТВЕРЖДЕНИЕ*/
 .confirmation {
   background: var(--bg3); border: 1px solid var(--border);
   border-radius: 10px; padding: 20px; margin-bottom: 20px;
@@ -434,9 +416,7 @@
   color: #fca5a5; font-size: 0.875rem; margin-top: 12px; text-align: center;
 }
 
-/* ══════════════════════════
-   КНОПКИ НАВИГАЦИИ
-══════════════════════════ */
+/*КНОПКИ НАВИГАЦИИ*/
 .stepButtons {
   display: flex; gap: 10px; justify-content: flex-end;
   margin-top: 28px; padding-top: 20px;
@@ -468,9 +448,7 @@
 .submitBtn:hover { background: #16a34a; }
 .submitBtn:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; }
 
-/* ══════════════════════════
-   АДАПТИВ
-══════════════════════════ */
+/*АДАПТИВ*/
 
 /* Большие экраны */
 @media (min-width: 1200px) {
