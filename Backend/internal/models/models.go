@@ -12,6 +12,7 @@ type User struct {
 	LastName     string    `db:"last_name" json:"last_name"`
 	Phone        string    `db:"phone" json:"phone"`
 	AvatarID     *int      `db:"avatar_id" json:"avatar_id,omitempty"`
+	Role         string    `db:"-" json:"role"`  // ← ДОБАВИТЬ ЭТУ СТРОКУ
 	CreatedAt    time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
 }
@@ -185,4 +186,80 @@ type ErrorResponse struct {
 type SuccessResponse struct {
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
+}
+
+// Добавить в конец файла internal/models/models.go
+
+// ---- Order Services ----
+
+type OrderService struct {
+	ID           int       `db:"id" json:"id"`
+	OrderID      int       `db:"order_id" json:"order_id"`
+	CategoryID   int       `db:"category_id" json:"category_id"`
+	Price        float64   `db:"price" json:"price"`
+	CreatedAt    time.Time `db:"created_at" json:"created_at"`
+	// Joined
+	ServiceName *string `db:"service_name" json:"service_name,omitempty"`
+}
+
+type AddOrderServicesRequest struct {
+	Services []OrderServiceItem `json:"services" validate:"required"`
+}
+
+type OrderServiceItem struct {
+	CategoryID int     `json:"category_id" validate:"required"`
+	Price      float64 `json:"price"`
+}
+
+// ---- Analytics ----
+
+type AdminStats struct {
+	TotalOrders      int     `json:"total_orders"`
+	MonthlyRevenue   float64 `json:"monthly_revenue"`
+	TotalRevenue     float64 `json:"total_revenue"`
+	ActiveOrders     int     `json:"active_orders"`
+	CompletedOrders  int     `json:"completed_orders"`
+}
+
+type UserRevenue struct {
+	UserID    int     `db:"user_id" json:"user_id"`
+	UserName  string  `db:"user_name" json:"user_name"`
+	Email     string  `db:"email" json:"email"`
+	TotalOrders int   `db:"total_orders" json:"total_orders"`
+	Revenue   float64 `db:"revenue" json:"revenue"`
+}
+
+type MonthlyRevenue struct {
+	Month   string  `db:"month" json:"month"`
+	Revenue float64 `db:"revenue" json:"revenue"`
+	Orders  int     `db:"orders" json:"orders"`
+}
+
+// ---- Chat ----
+
+type ChatConversation struct {
+	ID        int       `db:"id" json:"id"`
+	UserID    int       `db:"user_id" json:"user_id"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	// Joined
+	UserName     *string `db:"user_name" json:"user_name,omitempty"`
+	LastMessage  *string `db:"last_message" json:"last_message,omitempty"`
+	UnreadCount  int     `db:"unread_count" json:"unread_count"`
+}
+
+type ChatMessage struct {
+	ID             int       `db:"id" json:"id"`
+	ConversationID int       `db:"conversation_id" json:"conversation_id"`
+	SenderID       int       `db:"sender_id" json:"sender_id"`
+	IsFromAdmin    bool      `db:"is_from_admin" json:"is_from_admin"`
+	Message        string    `db:"message" json:"message"`
+	IsRead         bool      `db:"is_read" json:"is_read"`
+	CreatedAt      time.Time `db:"created_at" json:"created_at"`
+	// Joined
+	SenderName *string `db:"sender_name" json:"sender_name,omitempty"`
+}
+
+type SendMessageRequest struct {
+	Message string `json:"message" validate:"required"`
 }

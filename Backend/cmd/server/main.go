@@ -26,14 +26,13 @@ func main() {
 	db := database.Connect(cfg)
 	defer db.Close()
 
-	// ── Миграции ──────────────────────────────────────
+	// Миграции
 	migrationsDir := filepath.Join(".", "migrations")
 	log.Println("Running migrations...")
 	if err := database.RunMigrations(db, migrationsDir); err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
 	log.Println("Migrations done.")
-	// ──────────────────────────────────────────────────
 
 	// Repositories
 	userRepo := repository.NewUserRepository(db)
@@ -41,6 +40,8 @@ func main() {
 	categoryRepo := repository.NewCategoryRepository(db)
 	slotRepo := repository.NewSlotRepository(db)
 	reviewRepo := repository.NewReviewRepository(db)
+	chatRepo := repository.NewChatRepository(db)
+	analyticsRepo := repository.NewAnalyticsRepository(db)
 
 	// Services
 	jwtExpires, _ := time.ParseDuration(cfg.JWTExpires)
@@ -56,6 +57,8 @@ func main() {
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
 	slotHandler := handlers.NewSlotHandler(slotService)
 	reviewHandler := handlers.NewReviewHandler(reviewService)
+	chatHandler := handlers.NewChatHandler(chatRepo)
+	analyticsHandler := handlers.NewAnalyticsHandler(analyticsRepo)
 
 	// Fiber app
 	app := fiber.New(fiber.Config{
@@ -75,6 +78,7 @@ func main() {
 
 	api := app.Group("/api")
 
+	// ── Публичные маршруты ──
 	auth := api.Group("/auth")
 	auth.Post("/register", authHandler.Register)
 	auth.Post("/login", authHandler.Login)
@@ -83,13 +87,16 @@ func main() {
 	api.Get("/categories/:id", categoryHandler.Get)
 	api.Get("/reviews", reviewHandler.List)
 	api.Get("/slots", slotHandler.ListFree)
+	api.Get("/statuses", orderHandler.GetStatuses)  // ← ДОБАВИТЬ ЭТУ СТРОКУ
 
+	// ── Защищённые маршруты (клиент + админ) ──
 	protected := api.Group("", middleware.Protected(cfg.JWTSecret))
 	protected.Get("/auth/me", authHandler.Me)
 	protected.Put("/auth/avatar", authHandler.UpdateAvatar)
 	protected.Put("/auth/profile", authHandler.UpdateProfile)
 	protected.Put("/auth/password", authHandler.ChangePassword)
 	api.Post("/auth/reset-password", authHandler.RequestPasswordReset)
+
 	protected.Post("/orders", orderHandler.Create)
 	protected.Get("/orders", orderHandler.List)
 	protected.Get("/orders/:id", orderHandler.Get)
@@ -98,6 +105,16 @@ func main() {
 	protected.Get("/orders/:id/photos", orderHandler.GetPhotos)
 	protected.Post("/orders/:id/reviews", reviewHandler.Create)
 
+	// Услуги заказа
+	protected.Post("/orders/:id/services", orderHandler.AddServices)
+	protected.Get("/orders/:id/services", orderHandler.GetServices)
+
+	// Чат (клиент)
+	protected.Get("/chat", chatHandler.GetMyConversation)
+	protected.Get("/chat/messages", chatHandler.GetMessages)
+	protected.Post("/chat/message", chatHandler.SendMessage)
+
+	// ── Административные маршруты ──
 	admin := api.Group("/admin",
 		middleware.Protected(cfg.JWTSecret),
 		middleware.AdminOnly(),
@@ -108,6 +125,16 @@ func main() {
 	admin.Delete("/categories/:id", categoryHandler.Delete)
 	admin.Post("/slots", slotHandler.Create)
 	admin.Delete("/slots/:id", slotHandler.Delete)
+
+	// Аналитика
+	admin.Get("/stats", analyticsHandler.GetStats)
+	admin.Get("/stats/monthly", analyticsHandler.GetMonthlyRevenue)
+	admin.Get("/stats/users", analyticsHandler.GetUserRevenue)
+
+	// Чат (админ)
+	admin.Get("/chat/conversations", chatHandler.ListConversations)
+	admin.Get("/chat/messages", chatHandler.GetMessages)
+	admin.Post("/chat/message", chatHandler.SendMessage)
 
 	app.Use(func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Route not found"})

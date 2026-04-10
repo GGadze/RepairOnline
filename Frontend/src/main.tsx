@@ -5,6 +5,8 @@ import App from "./App";
 import "./index.css";
 import './theme.css'
 
+console.log('main.tsx loaded')
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>

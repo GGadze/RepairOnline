@@ -8,16 +8,16 @@ import (
 )
 
 type OrderRepository struct {
-	db *sqlx.DB
+	DB *sqlx.DB
 }
 
 func NewOrderRepository(db *sqlx.DB) *OrderRepository {
-	return &OrderRepository{db: db}
+	return &OrderRepository{DB: db}
 }
 
 // CreateWithSlot создаёт заказ и занимает слот в одной транзакции
 func (r *OrderRepository) CreateWithSlot(order *models.Order) error {
-	tx, err := r.db.Beginx()
+	tx, err := r.DB.Beginx()
 	if err != nil {
 		return err
 	}
@@ -93,19 +93,19 @@ func (r *OrderRepository) ListAll(statusID int) ([]models.Order, error) {
 		query += ` WHERE osh.status_id = $1`
 		query += ` ORDER BY o.id, osh.changed_at DESC NULLS LAST`
 		var orders []models.Order
-		err := r.db.Select(&orders, query, statusID)
+		err := r.DB.Select(&orders, query, statusID)
 		return orders, err
 	}
 
 	query += ` ORDER BY o.id, osh.changed_at DESC NULLS LAST`
 	var orders []models.Order
-	err := r.db.Select(&orders, query)
+	err := r.DB.Select(&orders, query)
 	return orders, err
 }
 
 func (r *OrderRepository) ListByUser(userID int) ([]models.Order, error) {
 	var orders []models.Order
-	err := r.db.Select(&orders, `
+	err := r.DB.Select(&orders, `
 		SELECT DISTINCT ON (o.id)
 		       o.*,
 		       s.name AS status_name, s.color_code,
@@ -123,7 +123,7 @@ func (r *OrderRepository) ListByUser(userID int) ([]models.Order, error) {
 
 func (r *OrderRepository) GetByID(id int) (*models.Order, error) {
 	order := &models.Order{}
-	err := r.db.Get(order, `
+	err := r.DB.Get(order, `
 		SELECT DISTINCT ON (o.id)
 		       o.*,
 		       s.name AS status_name, s.color_code,
@@ -142,7 +142,7 @@ func (r *OrderRepository) GetByID(id int) (*models.Order, error) {
 }
 
 func (r *OrderRepository) UpdateStatus(orderID, changedBy, statusID int) error {
-	_, err := r.db.Exec(`
+	_, err := r.DB.Exec(`
 		INSERT INTO order_status_history (order_id, status_id, changed_by)
 		VALUES ($1, $2, $3)`,
 		orderID, statusID, changedBy,
@@ -152,7 +152,7 @@ func (r *OrderRepository) UpdateStatus(orderID, changedBy, statusID int) error {
 
 func (r *OrderRepository) GetStatusHistory(orderID int) ([]models.OrderStatusHistory, error) {
 	var history []models.OrderStatusHistory
-	err := r.db.Select(&history, `
+	err := r.DB.Select(&history, `
 		SELECT osh.*, s.name AS status_name,
 		       u.first_name || ' ' || u.last_name AS changed_by_name
 		FROM order_status_history osh
@@ -166,7 +166,7 @@ func (r *OrderRepository) GetStatusHistory(orderID int) ([]models.OrderStatusHis
 }
 
 func (r *OrderRepository) SavePhoto(photo *models.Photo) error {
-	return r.db.QueryRowx(`
+	return r.DB.QueryRowx(`
 		INSERT INTO photos (order_id, file_path, file_name)
 		VALUES ($1, $2, $3)
 		RETURNING id, uploaded_at`,
@@ -176,6 +176,36 @@ func (r *OrderRepository) SavePhoto(photo *models.Photo) error {
 
 func (r *OrderRepository) GetPhotos(orderID int) ([]models.Photo, error) {
 	var photos []models.Photo
-	err := r.db.Select(&photos, `SELECT * FROM photos WHERE order_id = $1`, orderID)
+	err := r.DB.Select(&photos, `SELECT * FROM photos WHERE order_id = $1`, orderID)
 	return photos, err
+}
+
+// GetOrderServices — получить услуги конкретного заказа
+func (r *OrderRepository) GetOrderServices(orderID int) ([]models.OrderService, error) {
+	var services []models.OrderService
+	err := r.DB.Select(&services, `
+		SELECT
+			os.id, os.order_id, os.category_id, os.price, os.created_at,
+			c.name AS service_name
+		FROM order_services os
+		JOIN categories c ON c.id = os.category_id
+		WHERE os.order_id = $1
+		ORDER BY os.id
+	`, orderID)
+	return services, err
+}
+
+// AddOrderServices — добавить услуги к заказу
+func (r *OrderRepository) AddOrderServices(orderID int, services []models.OrderServiceItem) error {
+	for _, s := range services {
+		_, err := r.DB.Exec(`
+			INSERT INTO order_services (order_id, category_id, price)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (order_id, category_id) DO UPDATE SET price = EXCLUDED.price
+		`, orderID, s.CategoryID, s.Price)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

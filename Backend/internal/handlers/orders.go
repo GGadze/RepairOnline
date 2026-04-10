@@ -149,3 +149,70 @@ func (h *OrderHandler) GetPhotos(c *fiber.Ctx) error {
 
 	return c.JSON(photos)
 }
+
+// Добавить в файл internal/handlers/orders.go
+
+// POST /api/orders/:id/services — сохранить услуги заказа
+func (h *OrderHandler) AddServices(c *fiber.Ctx) error {
+	orderID, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid order ID"})
+	}
+
+	userID := middleware.GetUserID(c)
+	role := middleware.GetRole(c)
+
+	order, err := h.orderService.GetByID(orderID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Order not found"})
+	}
+	if role != "admin" && order.UserID != userID {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Access denied"})
+	}
+
+	var req models.AddOrderServicesRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	if err := h.orderService.AddServices(orderID, req.Services); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"ok": true})
+}
+
+// GET /api/orders/:id/services — получить услуги заказа
+func (h *OrderHandler) GetServices(c *fiber.Ctx) error {
+	orderID, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid order ID"})
+	}
+
+	userID := middleware.GetUserID(c)
+	role := middleware.GetRole(c)
+
+	order, err := h.orderService.GetByID(orderID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Order not found"})
+	}
+	if role != "admin" && order.UserID != userID {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Access denied"})
+	}
+
+	services, err := h.orderService.GetServices(orderID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(services)
+}
+
+// GET /api/statuses
+func (h *OrderHandler) GetStatuses(c *fiber.Ctx) error {
+	statuses, err := h.orderService.GetStatuses()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(statuses)
+}

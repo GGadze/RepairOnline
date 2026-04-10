@@ -7,6 +7,7 @@ export interface User {
   last_name: string
   phone: string
   avatar_id: number
+  role: 'admin' | 'user' | 'master'  // ← Добавить
   created_at: string
   updated_at: string
 }
@@ -140,4 +141,122 @@ export interface Status {
   name: string
   description: string
   color_code: string
+}
+// Добавить в файл src/types/index.ts
+
+// ---- Analytics ----
+
+export interface AdminStats {
+  total_orders: number
+  monthly_revenue: number
+  total_revenue: number
+  active_orders: number
+  completed_orders: number
+}
+
+export interface MonthlyRevenue {
+  month: string
+  revenue: number
+  orders: number
+}
+
+export interface UserRevenue {
+  user_id: number
+  user_name: string
+  email: string
+  total_orders: number
+  revenue: number
+}
+
+// ---- Chat ----
+
+export interface ChatConversation {
+  id: number
+  user_id: number
+  user_name: string
+  last_message: string | null
+  unread_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ChatMessage {
+  id: number
+  conversation_id: number
+  sender_id: number
+  sender_name: string
+  is_from_admin: boolean
+  message: string
+  is_read: boolean
+  created_at: string
+}
+
+// ---- Order Services ----
+
+export interface OrderService {
+  id: number
+  order_id: number
+  category_id: number
+  service_name: string
+  price: number
+  created_at: string
+}
+
+
+// ---- Analytics ----
+
+export interface AdminStats {
+  total_orders: number
+  monthly_revenue: number
+  total_revenue: number
+  active_orders: number
+  completed_orders: number
+}
+
+export interface MonthlyRevenue {
+  month: string
+  revenue: number
+  orders: number
+}
+
+export interface UserRevenue {
+  user_id: number
+  user_name: string
+  email: string
+  total_orders: number
+  revenue: number
+}
+
+// ---- Chat ----
+
+export interface ChatConversation {
+  id: number
+  user_id: number
+  user_name: string
+  last_message: string | null
+  unread_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ChatMessage {
+  id: number
+  conversation_id: number
+  sender_id: number
+  sender_name: string
+  is_from_admin: boolean
+  message: string
+  is_read: boolean
+  created_at: string
+}
+
+// ---- Order Services ----
+
+export interface OrderService {
+  id: number
+  order_id: number
+  category_id: number
+  service_name: string
+  price: number
+  created_at: string
 }

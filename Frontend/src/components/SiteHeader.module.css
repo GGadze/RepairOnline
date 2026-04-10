@@ -71,6 +71,14 @@
 }
 .orderBtn:hover { background: #fcd34d; transform: translateY(-1px); }
 
+.adminBtn {
+  background: none; border: 1px solid var(--amber); color: var(--amber);
+  font-size: 0.8rem; font-weight: 600; cursor: pointer;
+  padding: 6px 12px; border-radius: 6px;
+  transition: all 0.15s; font-family: var(--font);
+}
+.adminBtn:hover { background: rgba(245,158,11,0.1); }
+
 .logoutBtn {
   background: none; border: 1px solid #1e2d45; color: #94a3b8;
   font-size: 0.8rem; font-weight: 500; cursor: pointer;
@@ -100,3 +108,25 @@
 @media (max-width: 560px) { .orderBtn { display: none; } }
 
 .avatar { outline: none; background: none; padding: 0; }
+
+.adminBtn {
+  padding: 6px 14px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adminBtn:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.5);
+  transform: translateY(-1px);
+}

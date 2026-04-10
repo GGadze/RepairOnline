@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/GGadze/RepairOnline/internal/models"
@@ -37,9 +36,12 @@ func (s *AuthService) Register(req *models.RegisterRequest) (*models.AuthRespons
 	if err != nil {
 		return nil, errors.New("failed to hash password")
 	}
-	if err := verifyCaptcha(req.CaptchaToken, os.Getenv("HCAPTCHA_SECRET")); err != nil {
-    	return nil, errors.New("captcha verification failed")
-	}	
+	
+	// Временно отключаем проверку капчи
+	// if err := verifyCaptcha(req.CaptchaToken, os.Getenv("HCAPTCHA_SECRET")); err != nil {
+    //     return nil, errors.New("captcha verification failed")
+	// }
+	
 	user := &models.User{
 		Email:        req.Email,
 		PasswordHash: string(hash),
@@ -53,6 +55,10 @@ func (s *AuthService) Register(req *models.RegisterRequest) (*models.AuthRespons
 	if err := s.userRepo.AssignRole(user.ID, "client"); err != nil {
 		return nil, errors.New("failed to assign role")
 	}
+	
+	// Устанавливаем роль в объекте пользователя
+	user.Role = "client"
+	
 	token, err := s.generateToken(user, "client")
 	if err != nil {
 		return nil, err
@@ -72,6 +78,10 @@ func (s *AuthService) Login(req *models.LoginRequest) (*models.AuthResponse, err
 	if err != nil {
 		role = "client"
 	}
+	
+	// ДОБАВЬ ЭТУ СТРОКУ - устанавливаем роль в объекте пользователя
+	user.Role = role
+	
 	token, err := s.generateToken(user, role)
 	if err != nil {
 		return nil, err

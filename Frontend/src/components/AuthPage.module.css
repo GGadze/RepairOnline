@@ -150,18 +150,24 @@
   font-size: 0.85rem; color: var(--text3); line-height: 1.6;
 }
 
-.infoFooter {
-  font-size: 0.9rem; color: var(--text3);
-  padding-top: 28px; margin-top: 28px;
-  border-top: 1px solid var(--border);
-}
 .switchBtn {
   background: none; border: none; cursor: pointer;
   color: var(--amber); font-weight: 700;
   font-size: inherit; font-family: var(--font); padding: 0;
   transition: opacity 0.15s;
+  text-decoration: underline; text-underline-offset: 2px;
+  text-decoration-style: dotted;
 }
 .switchBtn:hover { opacity: 0.75; }
+
+/* Блок переключения под формой */
+.switchRow {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem; color: var(--text3);
+  text-align: center;
+}
 
 /* ── Форма ── */
 .formInner {

@@ -11,13 +11,15 @@ import (
 	"github.com/GGadze/RepairOnline/internal/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type OrderService struct {
-	orderRepo    *repository.OrderRepository
-	slotRepo     *repository.SlotRepository
-	categoryRepo *repository.CategoryRepository
-	uploadDir    string
+    db           *sqlx.DB  // ← ДОБАВИТЬ ЭТУ СТРОКУ
+    orderRepo    *repository.OrderRepository
+    slotRepo     *repository.SlotRepository
+    categoryRepo *repository.CategoryRepository
+    uploadDir    string
 }
 
 func NewOrderService(
@@ -27,11 +29,12 @@ func NewOrderService(
 	uploadDir string,
 ) *OrderService {
 	return &OrderService{
-		orderRepo:    orderRepo,
-		slotRepo:     slotRepo,
-		categoryRepo: categoryRepo,
-		uploadDir:    uploadDir,
-	}
+    db:           orderRepo.DB,  // ← теперь работает
+    orderRepo:    orderRepo,
+    slotRepo:     slotRepo,
+    categoryRepo: categoryRepo,
+    uploadDir:    uploadDir,
+}
 }
 
 func (s *OrderService) Create(userID int, req *models.CreateOrderRequest) (*models.Order, error) {
@@ -125,4 +128,26 @@ func (s *OrderService) UploadPhoto(orderID int, file *multipart.FileHeader, c *f
 
 func (s *OrderService) GetPhotos(orderID int) ([]models.Photo, error) {
 	return s.orderRepo.GetPhotos(orderID)
+}
+
+// Добавить в файл internal/services/orders.go
+
+// AddServices — сохранить услуги к заказу
+func (s *OrderService) AddServices(orderID int, services []models.OrderServiceItem) error {
+	return s.orderRepo.AddOrderServices(orderID, services)
+}
+
+// GetServices — получить услуги заказа
+func (s *OrderService) GetServices(orderID int) ([]models.OrderService, error) {
+	return s.orderRepo.GetOrderServices(orderID)
+}
+
+func (s *OrderService) GetStatuses() ([]models.Status, error) {
+	var statuses []models.Status
+	query := `SELECT id, name, description, color_code FROM statuses ORDER BY id`
+	err := s.db.Select(&statuses, query)
+	if err != nil {
+		return nil, err
+	}
+	return statuses, nil
 }

@@ -1,9 +1,25 @@
 import axios from 'axios';
 import type {
-  AuthResponse, RegisterRequest, LoginRequest, User,
-  Category, Order, CreateOrderRequest, UpdateOrderStatusRequest,
-  OrderStatusHistory, TimeSlot, Review, ReviewsResponse,
-  CreateReviewRequest, Photo,
+  AuthResponse,
+  RegisterRequest,
+  LoginRequest,
+  User,
+  Category,
+  Order,
+  CreateOrderRequest,
+  UpdateOrderStatusRequest,
+  OrderStatusHistory,
+  TimeSlot,
+  Review,
+  ReviewsResponse,
+  CreateReviewRequest,
+  Photo,
+  AdminStats,
+  MonthlyRevenue,
+  UserRevenue,
+  ChatConversation,
+  ChatMessage,
+  OrderService,
 } from '../types';
 
 const api = axios.create({
@@ -125,6 +141,57 @@ export const reviewsApi = {
 
   create: (orderId: number, data: CreateReviewRequest) =>
     api.post<Review>(`/orders/${orderId}/reviews`, data).then(r => r.data),
+};
+
+// =====================
+// ADMIN ANALYTICS
+// =====================
+export const adminApi = {
+  getStats: () =>
+    api.get<AdminStats>('/admin/stats').then(r => r.data),
+
+  getMonthlyRevenue: () =>
+    api.get<MonthlyRevenue[]>('/admin/stats/monthly').then(r => r.data),
+
+  getUserRevenue: () =>
+    api.get<UserRevenue[]>('/admin/stats/users').then(r => r.data),
+};
+
+// =====================
+// CHAT
+// =====================
+export const chatApi = {
+  // Клиент: получить свой диалог + сообщения
+  getMyConversation: () =>
+    api.get<{ conversation: ChatConversation; messages: ChatMessage[] }>('/chat').then(r => r.data),
+
+  // Клиент + Админ: получить сообщения
+  getMessages: (conversationId?: number) =>
+    api.get<ChatMessage[]>('/chat/messages', {
+      params: conversationId ? { conversation_id: conversationId } : {},
+    }).then(r => r.data),
+
+  // Клиент + Админ: отправить сообщение
+  sendMessage: (message: string, conversationId?: number) =>
+    api.post<ChatMessage>(
+      '/chat/message' + (conversationId ? `?conversation_id=${conversationId}` : ''),
+      { message }
+    ).then(r => r.data),
+
+  // Только админ: список всех диалогов
+  listConversations: () =>
+    api.get<ChatConversation[]>('/admin/chat/conversations').then(r => r.data),
+};
+
+// =====================
+// ORDER SERVICES
+// =====================
+export const orderServicesApi = {
+  getServices: (orderId: number) =>
+    api.get<OrderService[]>(`/orders/${orderId}/services`).then(r => r.data),
+
+  addServices: (orderId: number, services: { category_id: number; price: number }[]) =>
+    api.post(`/orders/${orderId}/services`, { services }).then(r => r.data),
 };
 
 export default api;
