@@ -131,6 +131,7 @@ type CreateOrderRequest struct {
 	AppointmentDate    string  `json:"appointment_date" validate:"required"`
 	AppointmentTime    string  `json:"appointment_time" validate:"required"`
 	IsCustomDevice     bool    `json:"is_custom_device"`
+	FinalPrice         *float64 `json:"final_price"`
 }
 
 type UpdateOrderStatusRequest struct {

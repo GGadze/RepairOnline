@@ -38,42 +38,45 @@ func NewOrderService(
 }
 
 func (s *OrderService) Create(userID int, req *models.CreateOrderRequest) (*models.Order, error) {
-	// Проверяем, что слот свободен (транзакционно)
-	slotFree, err := s.slotRepo.IsSlotFree(req.AppointmentDate, req.AppointmentTime)
-	if err != nil {
-		return nil, err
-	}
-	if !slotFree {
-		return nil, errors.New("this time slot is already booked")
-	}
+    // Проверяем, что слот свободен (транзакционно)
+    slotFree, err := s.slotRepo.IsSlotFree(req.AppointmentDate, req.AppointmentTime)
+    if err != nil {
+        return nil, err
+    }
+    if !slotFree {
+        return nil, errors.New("this time slot is already booked")
+    }
 
-	// Рассчитываем предварительную стоимость
-	var finalPrice *float64
-	if req.CategoryID != nil && !req.IsCustomDevice {
-		cat, err := s.categoryRepo.GetByID(*req.CategoryID)
-		if err == nil {
-			price := cat.BasePrice
-			finalPrice = &price
-		}
-	}
+    // Берём цену из запроса, если она передана
+    var finalPrice *float64
+    if req.FinalPrice != nil {
+        finalPrice = req.FinalPrice
+    } else if req.CategoryID != nil && !req.IsCustomDevice {
+        // Fallback: если цена не передана, берём базовую цену категории
+        cat, err := s.categoryRepo.GetByID(*req.CategoryID)
+        if err == nil {
+            price := cat.BasePrice
+            finalPrice = &price
+        }
+    }
 
-	order := &models.Order{
-		UserID:             userID,
-		CategoryID:         req.CategoryID,
-		CustomDeviceName:   req.CustomDeviceName,
-		ProblemDescription: req.ProblemDescription,
-		FinalPrice:         finalPrice,
-		AppointmentDate:    req.AppointmentDate,
-		AppointmentTime:    req.AppointmentTime,
-		IsCustomDevice:     req.IsCustomDevice,
-	}
+    order := &models.Order{
+        UserID:             userID,
+        CategoryID:         req.CategoryID,
+        CustomDeviceName:   req.CustomDeviceName,
+        ProblemDescription: req.ProblemDescription,
+        FinalPrice:         finalPrice,
+        AppointmentDate:    req.AppointmentDate,
+        AppointmentTime:    req.AppointmentTime,
+        IsCustomDevice:     req.IsCustomDevice,
+    }
 
-	// Создаём заказ и блокируем слот в одной транзакции
-	if err := s.orderRepo.CreateWithSlot(order); err != nil {
-		return nil, err
-	}
+    // Создаём заказ и блокируем слот в одной транзакции
+    if err := s.orderRepo.CreateWithSlot(order); err != nil {
+        return nil, err
+    }
 
-	return order, nil
+    return order, nil
 }
 
 func (s *OrderService) ListAll(statusID int) ([]models.Order, error) {

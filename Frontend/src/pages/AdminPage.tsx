@@ -435,19 +435,31 @@ const loadClientDetails = async (client: UserRevenue) => {
 }
 
   // ── Экспорт в CSV ─────────────────────────────────────────────────────────────
-  const exportToCSV = () => {
-    if (!userRevenue.length) return
-    
-    const headers = ['Клиент', 'Email', 'Заказов', 'Прибыль']
-    const rows = userRevenue.map(u => [u.user_name, u.email, String(u.total_orders), fmt(u.revenue)])
-    
-    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `revenue_report_${dateFrom}_${dateTo}.csv`
-    link.click()
-  }
+
+const exportToCSV = () => {
+  if (!userRevenue.length) return
+  
+  const headers = ['Клиент', 'Email', 'Заказов', 'Прибыль']
+  const rows = userRevenue.map(u => [
+    u.user_name, 
+    u.email, 
+    String(u.total_orders), 
+    // Убираем символ валюты и форматирование, оставляем чистое число
+    String(u.revenue).replace(/\D/g, '')
+  ])
+  
+  // Используем точку с запятой как разделитель (стандарт для Excel в РФ)
+  const csvContent = [headers, ...rows]
+    .map(row => row.join(';'))
+    .join('\n')
+  
+  // Добавляем BOM для корректного отображения кириллицы в Excel
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `revenue_report_${dateFrom}_${dateTo}.csv`
+  link.click()
+}
 
   // ── Фильтрация заказов ──
   const filteredOrders = useMemo(() => {
