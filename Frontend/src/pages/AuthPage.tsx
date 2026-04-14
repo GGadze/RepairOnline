@@ -80,9 +80,11 @@ export default function AuthPage() {
         login(data.user, data.token, payload.role as 'client'|'admin');
         setSuccess('Добро пожаловать!');
         setTimeout(() => {
-          window.scrollTo(0,0);
-          navigate(from, { replace: true });
-        }, 600);
+        window.scrollTo(0,0);
+        // Если админ — сразу в админку, иначе туда, откуда пришёл
+        const destination = payload.role === 'admin' ? '/admin' : from;
+        navigate(destination, { replace: true });
+      }, 600);
       } catch (e: any) {
         setError(e.response?.data?.error || 'Неверный email или пароль');
       } finally {
@@ -152,7 +154,8 @@ export default function AuthPage() {
         setSuccess('Аккаунт создан!');
         setTimeout(() => {
           window.scrollTo(0,0);
-          navigate(from, { replace: true });
+          const destination = payload.role === 'admin' ? '/admin' : from;
+          navigate(destination, { replace: true });
         }, 600);
       } catch (e: any) {
         setError(e.response?.data?.error || 'Ошибка регистрации');

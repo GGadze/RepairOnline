@@ -2,16 +2,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuthStore } from '../store/authStore'
 import { chatApi } from '../services/api'
 import type { ChatMessage, ChatConversation } from '../types'
-import styles from './ClientChat.module.css'
+import styles from '../components/ClientChat.module.css'
 
 export default function ClientChat() {
   const { isAuthenticated, user } = useAuthStore()
-  
-  // РАННИЙ ВОЗВРАТ - до всех хуков
-  // Не показываем чат для незалогиненных и для админа
-  if (!isAuthenticated || user?.role === 'admin') {
-    return null
-  }
   
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -25,45 +19,51 @@ export default function ClientChat() {
   const loadMessages = useCallback(async () => {
     try {
       const msgs = await chatApi.getMessages()
-      setMessages(msgs)
-      // Считаем непрочитанные от админа (когда чат закрыт)
+      const safeMessages = Array.isArray(msgs) ? msgs : []
+      setMessages(safeMessages)
       if (!open) {
-        setUnread(msgs.filter(m => m.is_from_admin && !m.is_read).length)
+        setUnread(safeMessages.filter(m => m.is_from_admin && !m.is_read).length)
       }
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
-    } catch { /* ignore */ }
+    } catch {
+      setMessages([])
+    }
   }, [open])
 
-  // Инициализация при первом открытии
   useEffect(() => {
-    if (!open) return
+    if (!open || !isAuthenticated) return
     setLoading(true)
-    chatApi.getMyConversation().then(data => {
-      setConversation(data.conversation)
-      setMessages(data.messages)
-      setUnread(0)
-      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
-    }).catch(() => {}).finally(() => setLoading(false))
-  }, [open])
+    chatApi.getMyConversation()
+      .then(data => {
+        setConversation(data.conversation)
+        const safeMessages = Array.isArray(data.messages) ? data.messages : []
+        setMessages(safeMessages)
+        setUnread(0)
+        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+      })
+      .catch(() => {
+        setMessages([])
+      })
+      .finally(() => setLoading(false))
+  }, [open, isAuthenticated])
 
-  // Polling пока чат открыт
   useEffect(() => {
-    if (!open || !conversation) return
+    if (!open || !conversation || !isAuthenticated) return
     pollingRef.current = setInterval(loadMessages, 4000)
     return () => { if (pollingRef.current) clearInterval(pollingRef.current) }
-  }, [open, conversation, loadMessages])
+  }, [open, conversation, isAuthenticated, loadMessages])
 
-  // Фоновый polling для счётчика непрочитанных
   useEffect(() => {
-    if (open) return
+    if (open || !isAuthenticated) return
     const id = setInterval(async () => {
       try {
         const msgs = await chatApi.getMessages()
-        setUnread(msgs.filter((m: ChatMessage) => m.is_from_admin && !m.is_read).length)
+        const safeMessages = Array.isArray(msgs) ? msgs : []
+        setUnread(safeMessages.filter((m: ChatMessage) => m.is_from_admin && !m.is_read).length)
       } catch { /* ignore */ }
     }, 15000)
     return () => clearInterval(id)
-  }, [open])
+  }, [open, isAuthenticated])
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -75,9 +75,12 @@ export default function ClientChat() {
     } catch { /* ignore */ }
   }
 
+  if (!isAuthenticated || user?.role === 'admin') {
+    return null
+  }
+
   return (
     <div className={styles.wrapper}>
-      {/* Всплывающее окно чата */}
       {open && (
         <div className={styles.chatBox}>
           <div className={styles.chatHeader}>
@@ -138,7 +141,6 @@ export default function ClientChat() {
         </div>
       )}
 
-      {/* Кнопка открытия */}
       <button
         className={`${styles.fab} ${open ? styles.fabOpen : ''}`}
         onClick={() => { setOpen(o => !o); setUnread(0) }}

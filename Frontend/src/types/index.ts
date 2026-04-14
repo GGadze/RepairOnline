@@ -72,8 +72,8 @@ export interface CreateOrderRequest {
   appointment_date: string
   appointment_time: string
   is_custom_device: boolean
+  final_price?: number | null // 👈 ДОБАВИТЬ
 }
-
 export interface UpdateOrderStatusRequest {
   status_id: number
   comment?: string
@@ -92,7 +92,6 @@ export interface OrderStatusHistory {
 }
 
 // ---- Time Slots ----
-
 export interface TimeSlot {
   id: number
   slot_date: string

@@ -115,23 +115,36 @@ export default function SiteHeader({ refs, alwaysVisible = false, activeId }: Si
         </nav>
 
         <div className={s.right}>
-          <button className={s.orderBtn} onClick={handleOrder}>Записаться</button>
-          
-          {/* Кнопка панели администратора - видна только для админов */}
-          {role === 'admin' && (
-            <button className={s.adminBtn} onClick={() => navigate('/admin')}>
-              ⚙️ Панель
-            </button>
-          )}
-          
-          {isAuthenticated && (
-            <button className={s.logoutBtn} onClick={() => logout()}>Выйти</button>
-          )}
-          
-          <button className={s.avatar} onClick={() => { window.scrollTo(0,0); navigate(isAuthenticated ? '/cabinet' : '/auth'); }}>
-            <span className={isAuthenticated ? s.avatarAuth : s.avatarGuest}>{isAuthenticated ? avatarEmoji : '👤'}</span>
-          </button>
-        </div>
+  {/* Кнопка "Записаться" — только для клиентов и гостей */}
+  {role !== 'admin' && (
+    <button className={s.orderBtn} onClick={handleOrder}>Записаться</button>
+  )}
+  
+  {/* Кнопка "Панель" — только для админа */}
+  {role === 'admin' && (
+    <button className={s.adminBtn} onClick={() => navigate('/admin')}>
+      ⚙️ Панель
+    </button>
+  )}
+  
+  {isAuthenticated && (
+    <button className={s.logoutBtn} onClick={() => logout()}>Выйти</button>
+  )}
+  
+  {/* Аватар — для клиента ведёт в /cabinet, для админа в /admin */}
+  <button className={s.avatar} onClick={() => { 
+    window.scrollTo(0,0); 
+    if (!isAuthenticated) {
+      navigate('/auth');
+    } else if (role === 'admin') {
+      navigate('/admin');
+    } else {
+      navigate('/cabinet');
+    }
+  }}>
+    <span className={isAuthenticated ? s.avatarAuth : s.avatarGuest}>{isAuthenticated ? avatarEmoji : '👤'}</span>
+  </button>
+</div>
       </div>
     </header>
   );

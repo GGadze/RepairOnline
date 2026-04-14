@@ -122,14 +122,9 @@ export const ordersApi = {
 // TIME SLOTS
 // =====================
 export const slotsApi = {
-  getFreeByDate: (date: string) =>
-    api.get<TimeSlot[]>('/slots', { params: { date } }).then(r => r.data),
-
-  create: (slot_date: string, slot_time: string) =>
-    api.post<TimeSlot>('/admin/slots', { slot_date, slot_time }).then(r => r.data),
-
-  delete: (id: number) =>
-    api.delete(`/admin/slots/${id}`).then(r => r.data),
+  getFreeByDate: (date: string) => api.get<TimeSlot[]>('/slots', { params: { date } }).then(r => r.data),
+  create: (slot_date: string, slot_time: string) => api.post<TimeSlot>('/admin/slots', { slot_date, slot_time }).then(r => r.data),
+  delete: (id: number) => api.delete(`/admin/slots/${id}`).then(r => r.data),
 };
 
 // =====================

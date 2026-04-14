@@ -79,8 +79,7 @@ function App() {
         } />
       </Routes>
 
-      {/* Временно отключаем чат */}
-      {/* <ClientChat /> */}
+    <ClientChat />
     </ErrorBoundary>
   )
 }

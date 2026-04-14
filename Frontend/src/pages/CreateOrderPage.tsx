@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
 import styles from '../components/CreateOrderPage.module.css';
-import { categoriesApi, ordersApi, slotsApi } from '../services/api';
+import { categoriesApi, ordersApi, slotsApi, orderServicesApi } from '../services/api';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import type { Category, TimeSlot } from '../types';
+
 
 // Дополнительные услуги (временные, пока не пришли с бэка)
 interface ExtraService {
@@ -32,14 +33,12 @@ export default function CreateOrderPage() {
   // Шаг 1 — устройство
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [subCategories, setSubCategories] = useState<Category[]>([]);
   const [selectedSubCategory, setSelectedSubCategory] = useState<Category | null>(null);
   const [isCustomDevice, setIsCustomDevice] = useState(false);
   const [customDevice, setCustomDevice] = useState('');
   const [carMake, setCarMake] = useState('');
   const [carModel, setCarModel] = useState('');
   const [carYear, setCarYear] = useState('');
-  // 'auto' | 'electronics' | null
   const [serviceMode, setServiceMode] = useState<'auto' | 'electronics' | null>(null);
 
   // Шаг 2 — проблема
@@ -52,7 +51,6 @@ export default function CreateOrderPage() {
 
   // Шаг 4 — дополнительные услуги
   const [selectedExtraServices, setSelectedExtraServices] = useState<ExtraService[]>([]);
-
   const [extraServices, setExtraServices] = useState<ExtraService[]>(DEFAULT_EXTRA_SERVICES);
 
   // Шаг 5 — время
@@ -71,73 +69,72 @@ export default function CreateOrderPage() {
     if (!isAuthenticated) navigate('/auth');
   }, [isAuthenticated, navigate]);
 
-
-
   useEffect(() => {
     categoriesApi.getAll().then((tree) => {
       setCategories(tree.filter(c => c.parent_id === null));
     });
   }, []);
 
-  // Загружаем доп. услуги с бэка; если эндпоинта нет — используем дефолтный список
   useEffect(() => {
     api.get<ExtraService[]>('/extra-services')
       .then(r => { if (r.data && r.data.length > 0) setExtraServices(r.data); })
-      .catch(() => { /* бэк не поддерживает, оставляем DEFAULT_EXTRA_SERVICES */ });
+      .catch(() => {});
   }, []);
 
+  // ===== НОВАЯ ЛОГИКА: услуги = children выбранной категории (любого уровня) =====
   useEffect(() => {
     if (!selectedCategory) return;
+    
+    // Сбрасываем выбор подкатегории и услуг
     setSelectedSubCategory(null);
     setSelectedServices([]);
     setSelectedExtraServices([]);
-    setServices([]); // сбрасываем услуги при смене категории
-    setTotalPrice(0); // сбрасываем цену
+    setTotalPrice(0);
+
     if (selectedCategory.name === 'Другое') {
       setIsCustomDevice(true);
-      setSubCategories([]);
-      // Для «Другое» услуги могут прийти как children или быть пустыми
-      const children = selectedCategory.children || [];
-      setServices(children);
+      // Для «Другое» услуги могут быть в children
+      setServices(selectedCategory.children || []);
     } else {
       setIsCustomDevice(false);
-      setSubCategories(selectedCategory.children || []);
+      // Услуги — это дети выбранной категории
+      setServices(selectedCategory.children || []);
     }
   }, [selectedCategory]);
 
+  // Если выбрана подкатегория (бренд), обновляем услуги
   useEffect(() => {
     if (!selectedSubCategory) return;
-    setSelectedServices([]); // сбрасываем выбранные услуги при смене подкатегории
+    setSelectedServices([]);
+    // Услуги — дети подкатегории
     setServices(selectedSubCategory.children || []);
   }, [selectedSubCategory]);
 
+  // Расчёт стоимости
   useEffect(() => {
-    // Расчет стоимости
     let base = selectedSubCategory?.base_price || selectedCategory?.base_price || 0;
     let servicesTotal = selectedServices.reduce((sum, s) => sum + s.base_price, 0);
     let extraTotal = 0;
-    
     let percentageMultiplier = 1;
+    
     selectedExtraServices.forEach(service => {
       if (service.type === 'percentage') {
-        // Срочный ремонт +20% применяем ко всей сумме (базовая + услуги)
         percentageMultiplier *= 1.2;
       } else if (service.type === 'fixed') {
         extraTotal += typeof service.price === 'number' ? service.price : 0;
       }
-      // Бесплатные игнорируем
     });
     
     setTotalPrice(Math.round((base + servicesTotal) * percentageMultiplier + extraTotal));
   }, [selectedServices, selectedExtraServices, selectedSubCategory, selectedCategory]);
 
+  // Генерация дней календаря
   useEffect(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const twoWeeksLater = new Date(today);
     twoWeeksLater.setDate(today.getDate() + 13);
     const days = [];
-    // Сдвиг: (getDay()+6)%7 — Пн=0..Вс=6
     const startDow = (today.getDay() + 6) % 7;
     for (let i = 0; i < startDow; i++) {
       days.push({ date: 0, dateStr: '', dayOfWeek: '', isPast: true, isEmpty: true });
@@ -158,7 +155,6 @@ export default function CreateOrderPage() {
     slotsApi.getFreeByDate(selectedDate).then(data => setFreeSlots(data || [])).catch(() => setFreeSlots([]));
   }, [selectedDate]);
 
-
   const handleServiceToggle = (service: Category) => {
     setSelectedServices(prev =>
       prev.find(s => s.id === service.id) ? prev.filter(s => s.id !== service.id) : [...prev, service]
@@ -176,27 +172,48 @@ export default function CreateOrderPage() {
   };
 
   const handleSubmit = async () => {
-    setSubmitError('');
-    setLoading(true);
-    try {
-      const categoryId = selectedSubCategory?.id ?? selectedCategory?.id ?? null;
-      const order = await ordersApi.create({
-        category_id: isCustomDevice ? null : categoryId,
-        custom_device_name: selectedCategory?.id === 0 ? `${carMake} ${carModel}${carYear ? ' ' + carYear : ''}` : isCustomDevice ? customDevice : null,
-        problem_description: problemDescription,
-        appointment_date: selectedDate,
-        appointment_time: selectedTime,
-        is_custom_device: isCustomDevice,
-      });
-      for (const file of photos) {
-        await ordersApi.uploadPhoto(order.id, file);
-      }
-      navigate('/cabinet');
-    } catch (e: any) {
-      setSubmitError(e.response?.data?.error || 'Ошибка при создании заявки');
-      setLoading(false);
+  setSubmitError('');
+  setLoading(true);
+  try {
+    const categoryId = selectedSubCategory?.id ?? selectedCategory?.id ?? null;
+    
+    // 1. Создаём заказ
+  const order = await ordersApi.create({
+    category_id: isCustomDevice ? null : categoryId,
+    custom_device_name: serviceMode === 'auto' 
+      ? `${carMake} ${carModel}${carYear ? ' ' + carYear : ''}` 
+      : (isCustomDevice ? customDevice : null),
+    problem_description: problemDescription,
+    appointment_date: selectedDate,
+    appointment_time: selectedTime,
+    is_custom_device: isCustomDevice,
+    final_price: totalPrice, // 👈 ДОБАВИТЬ
+  });
+
+    // 2. Отправляем выбранные услуги с ценами
+    if (selectedServices.length > 0) {
+      const services = selectedServices.map(s => ({
+        category_id: s.id,
+        price: s.base_price
+      }));
+      await orderServicesApi.addServices(order.id, services);
     }
-  };
+
+    // 3. Отправляем фотографии
+    for (const file of photos) {
+      await ordersApi.uploadPhoto(order.id, file);
+    }
+
+    navigate('/cabinet');
+  } catch (e: any) {
+    setSubmitError(e.response?.data?.error || 'Ошибка при создании заявки');
+    setLoading(false);
+  }
+};
+
+  // Проверка, есть ли подкатегории (бренды) у выбранной категории
+  const hasSubCategories = (selectedCategory?.children || []).length > 0 && 
+    (selectedCategory?.children || []).some(c => (c.children || []).length > 0 || c.base_price === 0);
 
   return (
     <div className={styles.page}>
@@ -220,7 +237,6 @@ export default function CreateOrderPage() {
             <div className={styles.step}>
               <h2 className={styles.stepTitle}>Что нужно отремонтировать?</h2>
 
-              {/* Выбор режима */}
               {serviceMode === null && (
                 <div className={styles.modePicker}>
                   <button className={styles.modeCard} onClick={() => {
@@ -242,30 +258,19 @@ export default function CreateOrderPage() {
                 </div>
               )}
 
-              {/* Авто — поля */}
               {serviceMode === 'auto' && (
                 <div className={styles.carFields}>
                   <button className={styles.modeBack} onClick={() => { setServiceMode(null); setSelectedCategory(null); setCarMake(''); setCarModel(''); setCarYear(''); }}>
                     ← Назад
                   </button>
                   <div className={styles.carFieldsRow}>
-                    <div>
-                      <label className={styles.carLabel}>Марка *</label>
-                      <input className={styles.input} type="text" placeholder="Toyota, BMW, Lada..." value={carMake} onChange={e=>setCarMake(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className={styles.carLabel}>Модель *</label>
-                      <input className={styles.input} type="text" placeholder="Camry, X5, Vesta..." value={carModel} onChange={e=>setCarModel(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className={styles.carLabel}>Год</label>
-                      <input className={styles.input} type="text" placeholder="2018" value={carYear} onChange={e=>setCarYear(e.target.value)} />
-                    </div>
+                    <div><label className={styles.carLabel}>Марка *</label><input className={styles.input} type="text" placeholder="Toyota, BMW, Lada..." value={carMake} onChange={e=>setCarMake(e.target.value)} /></div>
+                    <div><label className={styles.carLabel}>Модель *</label><input className={styles.input} type="text" placeholder="Camry, X5, Vesta..." value={carModel} onChange={e=>setCarModel(e.target.value)} /></div>
+                    <div><label className={styles.carLabel}>Год</label><input className={styles.input} type="text" placeholder="2018" value={carYear} onChange={e=>setCarYear(e.target.value)} /></div>
                   </div>
                 </div>
               )}
 
-              {/* Электроника — список категорий */}
               {serviceMode === 'electronics' && (
                 <>
                   <button className={styles.modeBack} onClick={() => { setServiceMode(null); setSelectedCategory(null); }}>
@@ -279,36 +284,36 @@ export default function CreateOrderPage() {
                       if (ai === -1) return 1; if (bi === -1) return -1;
                       return ai - bi;
                     }).map(cat => (
-                      <button
-                        key={cat.id}
-                        className={`${styles.deviceTypeBtn} ${selectedCategory?.id === cat.id ? styles.selected : ''}`}
-                        onClick={() => setSelectedCategory(cat)}
-                      >
+                      <button key={cat.id} className={`${styles.deviceTypeBtn} ${selectedCategory?.id === cat.id ? styles.selected : ''}`} onClick={() => setSelectedCategory(cat)}>
                         <span className={styles.deviceName}>{cat.name}</span>
                       </button>
                     ))}
                   </div>
-                  {subCategories.length > 0 && (
+                  
+                  {/* Показываем бренды, только если они есть */}
+                  {hasSubCategories && selectedCategory && (
                     <>
-                      <h2 className={styles.stepTitle} style={{ marginTop: '1.5rem' }}>Уточните модель</h2>
+                      <h2 className={styles.stepTitle} style={{ marginTop: '1.5rem' }}>Уточните модель (опционально)</h2>
                       <div className={styles.brandsGrid}>
-                        {subCategories.map(sub => (
-                          <button
-                            key={sub.id}
-                            className={`${styles.brandBtn} ${selectedSubCategory?.id === sub.id ? styles.selected : ''}`}
-                            onClick={() => setSelectedSubCategory(sub)}
-                          >
+                        <button
+                          className={`${styles.brandBtn} ${selectedSubCategory === null ? styles.selected : ''}`}
+                          onClick={() => setSelectedSubCategory(null)}
+                        >
+                          <span className={styles.brandName}>Любая модель</span>
+                        </button>
+                        {(selectedCategory.children || []).map(sub => (
+                          <button key={sub.id} className={`${styles.brandBtn} ${selectedSubCategory?.id === sub.id ? styles.selected : ''}`} onClick={() => setSelectedSubCategory(sub)}>
                             <span className={styles.brandName}>{sub.name}</span>
                           </button>
                         ))}
                       </div>
                     </>
                   )}
+                  
                   {isCustomDevice && (
                     <div className={styles.customDeviceSection}>
                       <h2 className={styles.stepTitle} style={{ marginTop: '1.5rem' }}>Опишите устройство</h2>
-                      <input type="text" className={styles.input} placeholder="Введите название устройства"
-                        value={customDevice} onChange={e => setCustomDevice(e.target.value)} />
+                      <input type="text" className={styles.input} placeholder="Введите название устройства" value={customDevice} onChange={e => setCustomDevice(e.target.value)} />
                     </div>
                   )}
                 </>
@@ -334,23 +339,11 @@ export default function CreateOrderPage() {
           {currentStep === 2 && (
             <div className={styles.step}>
               <h2 className={styles.stepTitle}>Опишите проблему</h2>
-              <textarea
-                className={styles.textarea}
-                rows={5}
-                placeholder="Подробно опишите, что случилось с устройством..."
-                value={problemDescription}
-                onChange={(e) => setProblemDescription(e.target.value)}
-              />
+              <textarea className={styles.textarea} rows={5} placeholder="Подробно опишите, что случилось с устройством..." value={problemDescription} onChange={(e) => setProblemDescription(e.target.value)} />
               <div className={styles.photoUpload}>
                 <h3>Фотографии поломки (необязательно)</h3>
                 <label className={styles.photoLabel}>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    style={{ display: 'none' }}
-                  />
+                  <input type="file" multiple accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
                   <span className={styles.photoBtn}>📷 Загрузить фото</span>
                 </label>
                 {photos.length > 0 && (
@@ -358,12 +351,7 @@ export default function CreateOrderPage() {
                     {photos.map((photo, index) => (
                       <div key={index} className={styles.photoItem}>
                         <span>📸 {photo.name}</span>
-                        <button
-                          className={styles.removePhoto}
-                          onClick={() => setPhotos(photos.filter((_, i) => i !== index))}
-                        >
-                          ✕
-                        </button>
+                        <button className={styles.removePhoto} onClick={() => setPhotos(photos.filter((_, i) => i !== index))}>✕</button>
                       </div>
                     ))}
                   </div>
@@ -371,13 +359,7 @@ export default function CreateOrderPage() {
               </div>
               <div className={styles.stepButtons}>
                 <button className={styles.prevBtn} onClick={() => setCurrentStep(1)}>Назад</button>
-                <button
-                  className={styles.nextBtn}
-                  onClick={() => setCurrentStep(3)}
-                  disabled={!problemDescription}
-                >
-                  Далее
-                </button>
+                <button className={styles.nextBtn} onClick={() => setCurrentStep(3)} disabled={!problemDescription}>Далее</button>
               </div>
             </div>
           )}
@@ -391,18 +373,12 @@ export default function CreateOrderPage() {
               ) : (
                 <div className={styles.servicesList}>
                   {services.map(service => (
-                    <div
-                      key={service.id}
-                      className={`${styles.serviceItem} ${selectedServices.find(s => s.id === service.id) ? styles.selected : ''}`}
-                      onClick={() => handleServiceToggle(service)}
-                    >
+                    <div key={service.id} className={`${styles.serviceItem} ${selectedServices.find(s => s.id === service.id) ? styles.selected : ''}`} onClick={() => handleServiceToggle(service)}>
                       <div className={styles.serviceInfo}>
                         <span className={styles.serviceName}>{service.name}</span>
                         <span className={styles.servicePrice}>{service.base_price} ₽</span>
                       </div>
-                      <div className={styles.serviceCheck}>
-                        {selectedServices.find(s => s.id === service.id) ? '✓' : ''}
-                      </div>
+                      <div className={styles.serviceCheck}>{selectedServices.find(s => s.id === service.id) ? '✓' : ''}</div>
                     </div>
                   ))}
                 </div>
@@ -424,22 +400,14 @@ export default function CreateOrderPage() {
               <h2 className={styles.stepTitle}>Дополнительные услуги</h2>
               <div className={styles.extraServicesList}>
                 {extraServices.map(service => (
-                  <div
-                    key={service.id}
-                    className={`${styles.extraServiceItem} ${selectedExtraServices.find(s => s.id === service.id) ? styles.selected : ''}`}
-                    onClick={() => handleExtraServiceToggle(service)}
-                  >
+                  <div key={service.id} className={`${styles.extraServiceItem} ${selectedExtraServices.find(s => s.id === service.id) ? styles.selected : ''}`} onClick={() => handleExtraServiceToggle(service)}>
                     <div className={styles.extraServiceInfo}>
                       <span className={styles.extraServiceName}>{service.name}</span>
                       <span className={styles.extraServiceDesc}>{service.description}</span>
                     </div>
                     <div className={styles.extraServiceRight}>
-                      <span className={styles.extraServicePrice}>
-                        {typeof service.price === 'number' ? `${service.price} ₽` : service.price}
-                      </span>
-                      <div className={styles.extraCheck}>
-                        {selectedExtraServices.find(s => s.id === service.id) ? '✓' : ''}
-                      </div>
+                      <span className={styles.extraServicePrice}>{typeof service.price === 'number' ? `${service.price} ₽` : service.price}</span>
+                      <div className={styles.extraCheck}>{selectedExtraServices.find(s => s.id === service.id) ? '✓' : ''}</div>
                     </div>
                   </div>
                 ))}
@@ -460,49 +428,22 @@ export default function CreateOrderPage() {
             <div className={styles.step}>
               <h2 className={styles.stepTitle}>Выберите удобную дату</h2>
               <div className={styles.calendar}>
-                <div className={styles.calendarHeader}>
-                  <span className={styles.calendarMonth}>Ближайшие 2 недели</span>
-                </div>
-                <div className={styles.weekDays}>
-                  {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => (
-                    <div key={d} className={styles.weekDay}>{d}</div>
-                  ))}
-                </div>
+                <div className={styles.calendarHeader}><span className={styles.calendarMonth}>Ближайшие 2 недели</span></div>
+                <div className={styles.weekDays}>{['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => <div key={d} className={styles.weekDay}>{d}</div>)}</div>
                 <div className={styles.calendarGrid}>
-                  {calendarDays.map((day, idx) =>
-                    day.isEmpty ? (
-                      <div key={`empty-${idx}`} className={styles.calendarEmpty} />
-                    ) : (
-                      <button
-                        key={day.dateStr}
-                        className={`${styles.calendarDay} ${styles.available} ${selectedDate === day.dateStr ? styles.selected : ''}`}
-                        onClick={() => setSelectedDate(day.dateStr)}
-                      >
-                        {day.date}
-                      </button>
-                    )
-                  )}
+                  {calendarDays.map((day, idx) => day.isEmpty ? <div key={`empty-${idx}`} className={styles.calendarEmpty} /> : (
+                    <button key={day.dateStr} className={`${styles.calendarDay} ${styles.available} ${selectedDate === day.dateStr ? styles.selected : ''}`} onClick={() => setSelectedDate(day.dateStr)}>{day.date}</button>
+                  ))}
                 </div>
               </div>
 
               {selectedDate && (
                 <div style={{ marginTop: '1.5rem' }}>
                   <h3>Свободное время на {selectedDate}</h3>
-                  {freeSlots.length === 0 ? (
-                    <p style={{ color: '#888', marginTop: '0.5rem' }}>
-                      На эту дату нет свободных слотов. Попробуйте другой день.
-                    </p>
-                  ) : (
+                  {freeSlots.length === 0 ? <p style={{ color: '#888', marginTop: '0.5rem' }}>На эту дату нет свободных слотов. Попробуйте другой день.</p> : (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
                       {freeSlots.map(slot => (
-                        <button
-                          key={slot.id}
-                          className={`${styles.calendarDay} ${selectedTime === slot.slot_time ? styles.selected : styles.available}`}
-                          style={{ width: 'auto', padding: '0.5rem 1rem' }}
-                          onClick={() => setSelectedTime(slot.slot_time)}
-                        >
-                          {slot.slot_time.slice(0, 5)}
-                        </button>
+                        <button key={slot.id} className={`${styles.calendarDay} ${selectedTime === slot.slot_time ? styles.selected : styles.available}`} style={{ width: 'auto', padding: '0.5rem 1rem' }} onClick={() => setSelectedTime(slot.slot_time)}>{slot.slot_time.slice(0, 5)}</button>
                       ))}
                     </div>
                   )}
@@ -511,13 +452,7 @@ export default function CreateOrderPage() {
 
               <div className={styles.stepButtons}>
                 <button className={styles.prevBtn} onClick={() => setCurrentStep(4)}>Назад</button>
-                <button
-                  className={styles.nextBtn}
-                  onClick={() => setCurrentStep(6)}
-                  disabled={!selectedDate || !selectedTime}
-                >
-                  Далее
-                </button>
+                <button className={styles.nextBtn} onClick={() => setCurrentStep(6)} disabled={!selectedDate || !selectedTime}>Далее</button>
               </div>
             </div>
           )}
@@ -527,50 +462,21 @@ export default function CreateOrderPage() {
             <div className={styles.step}>
               <h2 className={styles.stepTitle}>Подтверждение заявки</h2>
               <div className={styles.confirmation}>
-                <div className={styles.confirmSection}>
-                  <h3>Устройство</h3>
-                  <p>{isCustomDevice ? customDevice : (selectedSubCategory?.name || selectedCategory?.name)}</p>
-                </div>
-                <div className={styles.confirmSection}>
-                  <h3>Проблема</h3>
-                  <p>{problemDescription}</p>
-                </div>
+                <div className={styles.confirmSection}><h3>Устройство</h3><p>{isCustomDevice ? customDevice : (selectedSubCategory?.name || selectedCategory?.name)}</p></div>
+                <div className={styles.confirmSection}><h3>Проблема</h3><p>{problemDescription}</p></div>
                 {selectedServices.length > 0 && (
-                  <div className={styles.confirmSection}>
-                    <h3>Услуги</h3>
-                    {selectedServices.map(s => (
-                      <p key={s.id}>{s.name} — {s.base_price} ₽</p>
-                    ))}
-                  </div>
+                  <div className={styles.confirmSection}><h3>Услуги</h3>{selectedServices.map(s => <p key={s.id}>{s.name} — {s.base_price} ₽</p>)}</div>
                 )}
                 {selectedExtraServices.length > 0 && (
-                  <div className={styles.confirmSection}>
-                    <h3>Дополнительные услуги</h3>
-                    {selectedExtraServices.map(s => (
-                      <p key={s.id}>
-                        {s.name} — {typeof s.price === 'number' ? `${s.price} ₽` : s.price}
-                      </p>
-                    ))}
-                  </div>
+                  <div className={styles.confirmSection}><h3>Дополнительные услуги</h3>{selectedExtraServices.map(s => <p key={s.id}>{s.name} — {typeof s.price === 'number' ? `${s.price} ₽` : s.price}</p>)}</div>
                 )}
-                <div className={styles.confirmSection}>
-                  <h3>Дата и время визита</h3>
-                  <p>
-                    {new Date(selectedDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}{' '}
-                    в {selectedTime.slice(0, 5)}
-                  </p>
-                </div>
-                <div className={styles.confirmTotal}>
-                  <span>Итоговая стоимость:</span>
-                  <span className={styles.finalPrice}>{totalPrice} ₽</span>
-                </div>
+                <div className={styles.confirmSection}><h3>Дата и время визита</h3><p>{new Date(selectedDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })} в {selectedTime.slice(0, 5)}</p></div>
+                <div className={styles.confirmTotal}><span>Итоговая стоимость:</span><span className={styles.finalPrice}>{totalPrice} ₽</span></div>
               </div>
               {submitError && <div style={{ color: 'red', marginBottom: '1rem' }}>{submitError}</div>}
               <div className={styles.stepButtons}>
                 <button className={styles.prevBtn} onClick={() => setCurrentStep(5)}>Назад</button>
-                <button className={styles.submitBtn} onClick={handleSubmit} disabled={loading}>
-                  {loading ? 'Отправка...' : 'Отправить заявку'}
-                </button>
+                <button className={styles.submitBtn} onClick={handleSubmit} disabled={loading}>{loading ? 'Отправка...' : 'Отправить заявку'}</button>
               </div>
             </div>
           )}
