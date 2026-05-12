@@ -12,7 +12,6 @@ RUN go mod tidy && go build -o server ./cmd/server
 FROM alpine:3.19
 WORKDIR /app
 COPY --from=builder /app/server .
-COPY --from=builder /app/.env.example .env
 
 RUN mkdir -p uploads
 
