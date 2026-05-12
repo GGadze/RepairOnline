@@ -27,7 +27,7 @@ interface SiteHeaderProps {
 export default function SiteHeader({ refs, alwaysVisible = false, activeId }: SiteHeaderProps) {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const { isAuthenticated, logout, user, role } = useAuthStore();
+  const { isAuthenticated, logout, role } = useAuthStore();
   const headerRef = useRef<HTMLElement>(null);
 
   const [visible,  setVisible]  = useState(true);

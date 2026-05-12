@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
 import styles from '../components/CabinetPage.module.css';
@@ -165,14 +165,14 @@ export default function CabinetPage() {
     }
   };
 
-  const getOrderStatusClass = (statusName: string) => {
-    const map: Record<string, string> = {
-      'Новая': styles.pending, 'Принята': styles.inProgress,
-      'В процессе': styles.inProgress, 'Ожидание запчастей': styles.pending,
-      'Готово': styles.completed, 'Выдан': styles.completed, 'Отменён': styles.cancelled,
-    };
-    return `${styles.orderStatus} ${map[statusName] || ''}`;
-  };
+  // const getOrderStatusClass = (statusName: string) => {
+  //   const map: Record<string, string> = {
+  //     'Новая': styles.pending, 'Принята': styles.inProgress,
+  //     'В процессе': styles.inProgress, 'Ожидание запчастей': styles.pending,
+  //     'Готово': styles.completed, 'Выдан': styles.completed, 'Отменён': styles.cancelled,
+  //   };
+  //   return `${styles.orderStatus} ${map[statusName] || ''}`;
+  // };
 
   const isCompleted = (o: Order) => ['Готово', 'Выдан'].includes(o.status_name);
   const formatDate = (d: string) => new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });

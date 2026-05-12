@@ -269,7 +269,6 @@ export default function AdminPage() {
   const handleUpdateStatus = async () => {
     if (!selectedOrder || !newStatusId) return
     
-    const targetStatus = statuses.find(s => s.id === newStatusId)
     
     await api.patch(`/admin/orders/${selectedOrder.id}/status`, {
       status_id: newStatusId,
