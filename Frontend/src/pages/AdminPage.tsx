@@ -498,9 +498,9 @@ const exportToCSV = () => {
       {/* ── Sidebar ── */}
       <aside className={styles.sidebar}>
         <div className={styles.sidebarBrand}>
-          <div className={styles.sidebarLogo}>RO</div>
+          <div className={styles.sidebarLogo}>АМ</div>
           <div>
-            <div className={styles.sidebarTitle}>Ремонт-Онлайн</div>
+            <div className={styles.sidebarTitle}>АвтоМастер</div>
             <div className={styles.sidebarSub}>Панель администратора</div>
           </div>
         </div>
@@ -555,7 +555,7 @@ const exportToCSV = () => {
             </div>
 
             {/* Фильтр по датам */}
-            <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+            <div className={styles.dateFilter}>
               <input type="date" className={styles.input} style={{ width: 'auto' }} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
               <span style={{ color: 'var(--c-text3)', alignSelf: 'center' }}>—</span>
               <input type="date" className={styles.input} style={{ width: 'auto' }} value={dateTo} onChange={e => setDateTo(e.target.value)} />
@@ -575,7 +575,7 @@ const exportToCSV = () => {
                 </div>
 
                 {/* График прибыли по месяцам + Распределение по статусам */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 24 }}>
+                <div className={styles.chartsRow}>
                   {monthly.length > 0 && (
                     <div className={styles.chartCard}>
                       <h2 className={styles.chartTitle}>Прибыль по месяцам</h2>

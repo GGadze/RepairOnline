@@ -274,6 +274,7 @@
 .extraServiceItem.selected { border-left-color: var(--amber); background: rgba(245,158,11,0.06); }
 
 .extraServiceInfo { flex: 1; }
+.extraServiceInfo { display: flex; flex-direction: column; min-width: 0; }
 .extraServiceName { font-size: 0.95rem; font-weight: 700; color: var(--text); margin-bottom: 2px; }
 .extraServiceDesc { font-size: 0.82rem; color: var(--text3); }
 .extraServiceRight { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }

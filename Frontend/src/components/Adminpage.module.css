@@ -1013,8 +1013,16 @@
 
 @media (max-width: 768px) {
   .page { flex-direction: column; }
-  .sidebar { width: 100%; min-height: auto; position: relative; }
-  .nav { flex-direction: row; overflow-x: auto; flex-wrap: nowrap; padding: 8px; gap: 4px; }
+  .sidebar { width: 100%; min-height: auto; height: auto; position: relative; top: auto; overflow-y: visible; }
+  .nav {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+    padding: 10px; overflow: visible; flex: none;
+  }
+  .navItem {
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 5px; padding: 12px 6px; font-size: 0.78rem; text-align: center;
+  }
+  .navIcon { font-size: 1.15rem; }
   .navItem { white-space: nowrap; }
   .main { padding: 16px; }
   .ordersLayout { grid-template-columns: 1fr; }
@@ -1022,4 +1030,33 @@
   .chatSidebar { border-right: none; border-bottom: 1px solid var(--c-border, #1e2d45); max-height: 200px; }
   .catalogHeader { flex-direction: column; gap: 12px; align-items: stretch; }
   .searchWrapper { max-width: none; }
+}
+/* ════════════════════════════════════════
+   Доработки адаптива (плитки/графики/таблицы)
+   ════════════════════════════════════════ */
+
+/* Фильтр по датам в аналитике */
+.dateFilter {
+  display: flex; gap: 16px; align-items: center;
+  margin-bottom: 24px; flex-wrap: wrap;
+}
+
+/* Ряд из двух графиков — равные колонки (симметрия) */
+.chartsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .chartsRow { grid-template-columns: 1fr; gap: 16px; }
+  .dateFilter > .input { flex: 1 1 130px; min-width: 0; }
+}
+
+/* Таблицы: уплотняем на узких экранах, чтобы не приходилось листать */
+@media (max-width: 600px) {
+  .table { font-size: 0.8rem; }
+  .table th { padding: 9px 8px; font-size: 0.66rem; letter-spacing: 0.2px; }
+  .table td { padding: 9px 8px; }
+  .table td:nth-child(2) { word-break: break-word; }
 }

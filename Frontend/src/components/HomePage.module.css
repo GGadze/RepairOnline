@@ -1,4 +1,3 @@
-
 .page {
   --bg:        #1a2235;
   --bg2:       #202b3d;
@@ -493,12 +492,20 @@
   .heroInner { grid-template-columns: 1fr 360px; gap: 40px; }
   .autoGrid { grid-template-columns: repeat(2, 1fr); }
   .autoCard1, .autoCard3, .autoCard5 { padding-top: 28px; }
+  /* при 2 колонках перечиняем границы карточек */
+  .autoCard:nth-child(n) { border-right: none; border-bottom: 1px solid var(--border); }
+  .autoCard:nth-child(odd) { border-right: 1px solid var(--border); }
+  .autoCard:last-child { border-bottom: none; }
   .aboutGrid { grid-template-columns: 1fr; gap: 48px; }
   .aboutPhotoWrap { max-width: 520px; }
   .contactsGrid { grid-template-columns: 1fr; }
+  /* ГЛАВНЫЙ ФИКС: секция "Электроника" сворачивается в одну колонку */
+  .techLayout { grid-template-columns: 1fr; gap: 32px; }
+  .techRight { position: static; top: auto; }
   .heroFacts { grid-template-columns: repeat(2, 1fr); }
-  .factItem:nth-child(2) { border-right: none; }
+  .factItem:nth-child(2n) { border-right: none; }
 }
+
 @media (max-width: 768px) {
   .heroInner { grid-template-columns: 1fr; padding: 48px 20px 40px; gap: 32px; }
   .heroRight { display: none; }
@@ -506,7 +513,34 @@
   .sectionInner { padding: 0 20px; }
   .autoSection, .techSection, .aboutSection, .contactsSection { padding: 56px 0; }
   .autoGrid { grid-template-columns: 1fr; }
+  .autoCard:nth-child(n) { border-right: none; border-bottom: 1px solid var(--border); }
+  .autoCard:last-child { border-bottom: none; }
   .heroFacts { grid-template-columns: repeat(2, 1fr); padding: 0 20px; }
   .footerInner { flex-direction: column; align-items: flex-start; }
   .heroPill1, .heroPill2 { display: none; }
+  .sectionAction { gap: 12px; }
+  .priceRow { padding: 16px 18px; }
+  .priceHead { padding: 12px 18px; }
+  .aboutBadge { right: 0; bottom: -12px; }
+}
+
+@media (max-width: 480px) {
+  .heroTitle { font-size: 2rem; letter-spacing: -1px; }
+  .heroDesc { font-size: 1.05rem; }
+  .sectionInner { padding: 0 16px; }
+  .heroInner { padding: 40px 16px 32px; }
+  .sectionTitle { letter-spacing: -0.5px; }
+  /* факты — в один столбец, с горизонтальными разделителями */
+  .heroFacts { grid-template-columns: 1fr; padding: 0 16px; }
+  .factItem { border-right: none; border-bottom: 1px solid var(--border); padding: 22px 0; }
+  .factItem:last-child { border-bottom: none; }
+  .factNum { font-size: 2rem; }
+  .autoSection, .techSection, .aboutSection, .contactsSection { padding: 44px 0; }
+  .autoCard { padding: 28px 22px 32px; }
+  .autoCard0, .autoCard1, .autoCard2, .autoCard3, .autoCard4, .autoCard5 { padding-top: 28px; }
+  .techTag { padding: 9px 16px; font-size: 0.92rem; }
+  .priceName, .priceVal { font-size: 0.98rem; }
+  /* кнопки на всю ширину — удобнее пальцем */
+  .heroCtas { flex-direction: column; }
+  .heroCtas .ctaPrimary, .heroCtas .ctaGhost { width: 100%; }
 }

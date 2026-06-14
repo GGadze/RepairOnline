@@ -71,14 +71,6 @@
 }
 .orderBtn:hover { background: #fcd34d; transform: translateY(-1px); }
 
-.adminBtn {
-  background: none; border: 1px solid var(--amber); color: var(--amber);
-  font-size: 0.8rem; font-weight: 600; cursor: pointer;
-  padding: 6px 12px; border-radius: 6px;
-  transition: all 0.15s; font-family: var(--font);
-}
-.adminBtn:hover { background: rgba(245,158,11,0.1); }
-
 .logoutBtn {
   background: none; border: 1px solid #1e2d45; color: #94a3b8;
   font-size: 0.8rem; font-weight: 500; cursor: pointer;
@@ -97,17 +89,11 @@
   cursor: pointer; overflow: visible;
   transition: border-color 0.15s, transform 0.15s;
   flex-shrink: 0;
-  padding: 0;
+  padding: 0; outline: none;
 }
 .avatar:hover { border-color: #f59e0b; transform: scale(1.08); }
 .avatarGuest { opacity: 0.6; }
 .avatarAuth  {}
-
-/* Mobile */
-@media (max-width: 860px) { .nav { display: none; } }
-@media (max-width: 560px) { .orderBtn { display: none; } }
-
-.avatar { outline: none; background: none; padding: 0; }
 
 .adminBtn {
   padding: 6px 14px;
@@ -119,14 +105,133 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
-  margin-right: 8px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-family: var(--font);
+  white-space: nowrap;
 }
-
 .adminBtn:hover {
   background: rgba(245, 158, 11, 0.2);
   border-color: rgba(245, 158, 11, 0.5);
   transform: translateY(-1px);
+}
+
+/* ════════════════════════════════════════
+   Бургер-кнопка (скрыта на десктопе)
+   ════════════════════════════════════════ */
+.burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px; height: 40px;
+  padding: 9px;
+  background: none;
+  border: 1px solid #253350;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.burger span {
+  display: block;
+  height: 2px; width: 100%;
+  background: #f1f5f9;
+  border-radius: 2px;
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+.burgerOpen span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.burgerOpen span:nth-child(2) { opacity: 0; }
+.burgerOpen span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ════════════════════════════════════════
+   Мобильное выпадающее меню
+   ════════════════════════════════════════ */
+.mobilePanel {
+  position: fixed;
+  top: 64px; left: 0; right: 0;
+  z-index: 999;
+  background: rgba(10, 15, 30, 0.99);
+  border-bottom: 1px solid #1e2d45;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 16px 20px 22px;
+  display: flex; flex-direction: column; gap: 18px;
+  transform: translateY(-12px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+.mobilePanelOpen {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobileNav { display: flex; flex-direction: column; gap: 2px; }
+.mobileNavBtn {
+  background: none; border: none; cursor: pointer;
+  text-align: left;
+  padding: 13px 14px; border-radius: 8px;
+  font-size: 1rem; font-weight: 500;
+  color: #cbd5e1;
+  font-family: var(--font);
+  transition: color 0.15s, background 0.15s;
+}
+.mobileNavBtn:hover, .mobileNavBtn:active {
+  color: #f1f5f9; background: rgba(255,255,255,0.05);
+}
+
+.mobileActions {
+  display: flex; flex-direction: column; gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid #1e2d45;
+}
+.mobileActions button {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 10px;
+  font-size: 0.95rem; font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.mobileOrderBtn { background: #f59e0b; color: #0a0f1e; border: none; }
+.mobileAdminBtn {
+  background: rgba(245,158,11,0.12); color: #f59e0b;
+  border: 1px solid rgba(245,158,11,0.35);
+}
+.mobileLoginBtn { background: #3b82f6; color: #fff; border: none; }
+.mobileLogoutBtn {
+  background: none; color: #94a3b8;
+  border: 1px solid #1e2d45; font-weight: 500;
+}
+.mobileLogoutBtn:active { border-color: #ef4444; color: #ef4444; }
+
+/* Затемнение под меню */
+.backdrop {
+  position: fixed; inset: 64px 0 0 0;
+  z-index: 998;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.backdropOpen { opacity: 1; pointer-events: auto; }
+
+/* ════════════════════════════════════════
+   Брейкпоинты
+   ════════════════════════════════════════ */
+@media (max-width: 860px) {
+  .inner { padding: 0 16px; }
+  .nav { display: none; }
+  .orderBtn, .adminBtn, .logoutBtn { display: none; }
+  .burger { display: flex; }
+}
+
+/* Очень узкие экраны — ужимаем подпись логотипа */
+@media (max-width: 380px) {
+  .logoSub { display: none; }
+  .logoText { font-size: 0.92rem; }
 }

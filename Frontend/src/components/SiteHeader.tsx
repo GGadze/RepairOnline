@@ -34,6 +34,7 @@ export default function SiteHeader({ refs, alwaysVisible = false, activeId }: Si
   const [lastY,    setLastY]    = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const [avatarEmoji, setAvatarEmoji] = useState('👤');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Читаем при монтировании и при смене авторизации
   useEffect(() => {
@@ -63,6 +64,15 @@ export default function SiteHeader({ refs, alwaysVisible = false, activeId }: Si
     return () => window.removeEventListener('scroll', fn);
   }, [lastY, alwaysVisible]);
 
+  // Блокируем прокрутку фона, когда открыто мобильное меню
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  // Закрываем меню при смене маршрута
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
   const scrollToRef = (ref?: React.RefObject<HTMLElement | null>) => {
     if (!ref?.current) return;
     const hh = headerRef.current?.offsetHeight ?? 64;
@@ -70,6 +80,7 @@ export default function SiteHeader({ refs, alwaysVisible = false, activeId }: Si
   };
 
   const handleNav = (id: string) => {
+    setMenuOpen(false);
     setVisible(true);
     if (id === 'reviews') { navigate('/reviews'); return; }
     if (location.pathname !== '/') {
@@ -85,8 +96,17 @@ export default function SiteHeader({ refs, alwaysVisible = false, activeId }: Si
   };
 
   const handleOrder = () => {
+    setMenuOpen(false);
     window.scrollTo(0, 0);
     navigate(isAuthenticated ? '/create-order' : '/auth', { state: { from: { pathname: '/create-order' } } });
+  };
+
+  const goAvatar = () => {
+    setMenuOpen(false);
+    window.scrollTo(0, 0);
+    if (!isAuthenticated) navigate('/auth');
+    else if (role === 'admin') navigate('/admin');
+    else navigate('/cabinet');
   };
 
   return (
@@ -115,37 +135,71 @@ export default function SiteHeader({ refs, alwaysVisible = false, activeId }: Si
         </nav>
 
         <div className={s.right}>
-  {/* Кнопка "Записаться" — только для клиентов и гостей */}
-  {role !== 'admin' && (
-    <button className={s.orderBtn} onClick={handleOrder}>Записаться</button>
-  )}
-  
-  {/* Кнопка "Панель" — только для админа */}
-  {role === 'admin' && (
-    <button className={s.adminBtn} onClick={() => navigate('/admin')}>
-      ⚙️ Панель
-    </button>
-  )}
-  
-  {isAuthenticated && (
-    <button className={s.logoutBtn} onClick={() => logout()}>Выйти</button>
-  )}
-  
-  {/* Аватар — для клиента ведёт в /cabinet, для админа в /admin */}
-  <button className={s.avatar} onClick={() => { 
-    window.scrollTo(0,0); 
-    if (!isAuthenticated) {
-      navigate('/auth');
-    } else if (role === 'admin') {
-      navigate('/admin');
-    } else {
-      navigate('/cabinet');
-    }
-  }}>
-    <span className={isAuthenticated ? s.avatarAuth : s.avatarGuest}>{isAuthenticated ? avatarEmoji : '👤'}</span>
-  </button>
-</div>
+          {/* Кнопка "Записаться" — только для клиентов и гостей */}
+          {role !== 'admin' && (
+            <button className={s.orderBtn} onClick={handleOrder}>Записаться</button>
+          )}
+
+          {/* Кнопка "Панель" — только для админа */}
+          {role === 'admin' && (
+            <button className={s.adminBtn} onClick={() => navigate('/admin')}>
+              ⚙️ Панель
+            </button>
+          )}
+
+          {isAuthenticated && (
+            <button className={s.logoutBtn} onClick={() => logout()}>Выйти</button>
+          )}
+
+          {/* Аватар — для клиента ведёт в /cabinet, для админа в /admin */}
+          <button className={s.avatar} onClick={goAvatar}>
+            <span className={isAuthenticated ? s.avatarAuth : s.avatarGuest}>{isAuthenticated ? avatarEmoji : '👤'}</span>
+          </button>
+
+          {/* Бургер — виден только на мобилке */}
+          <button
+            className={[s.burger, menuOpen ? s.burgerOpen : ''].join(' ')}
+            onClick={() => setMenuOpen(v => !v)}
+            aria-label="Меню"
+            aria-expanded={menuOpen}
+          >
+            <span /><span /><span />
+          </button>
+        </div>
       </div>
+
+      {/* Мобильное выпадающее меню */}
+      <div className={[s.mobilePanel, menuOpen ? s.mobilePanelOpen : ''].join(' ')}>
+        <nav className={s.mobileNav}>
+          {NAV.map(item => (
+            <button key={item.id}
+              className={[s.mobileNavBtn, activeId === item.id ? s.navBtnActive : ''].join(' ')}
+              onClick={() => handleNav(item.id)}>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className={s.mobileActions}>
+          {role !== 'admin' && (
+            <button className={s.mobileOrderBtn} onClick={handleOrder}>Записаться</button>
+          )}
+          {role === 'admin' && (
+            <button className={s.mobileAdminBtn} onClick={() => { setMenuOpen(false); navigate('/admin'); }}>
+              ⚙️ Панель администратора
+            </button>
+          )}
+          {isAuthenticated
+            ? <button className={s.mobileLogoutBtn} onClick={() => { setMenuOpen(false); logout(); }}>Выйти</button>
+            : <button className={s.mobileLoginBtn} onClick={() => { setMenuOpen(false); navigate('/auth'); }}>Войти</button>}
+        </div>
+      </div>
+
+      {/* Затемнение фона */}
+      <div
+        className={[s.backdrop, menuOpen ? s.backdropOpen : ''].join(' ')}
+        onClick={() => setMenuOpen(false)}
+      />
     </header>
   );
 }
