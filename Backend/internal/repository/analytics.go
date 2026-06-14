@@ -13,8 +13,9 @@ func NewAnalyticsRepository(db *sqlx.DB) *AnalyticsRepository {
 	return &AnalyticsRepository{db: db}
 }
 
-// GetAdminStats — общая статистика
-func (r *AnalyticsRepository) GetAdminStats() (*models.AdminStats, error) {
+// GetAdminStats — общая статистика за период (from/to в формате 'YYYY-MM-DD';
+// пустые строки означают "без фильтра по этой границе").
+func (r *AnalyticsRepository) GetAdminStats(from, to string) (*models.AdminStats, error) {
 	stats := &models.AdminStats{}
 	err := r.db.QueryRow(`
 		SELECT
@@ -28,7 +29,9 @@ func (r *AnalyticsRepository) GetAdminStats() (*models.AdminStats, error) {
 		LEFT JOIN order_status_history osh ON osh.order_id = o.id
 			AND osh.id = (SELECT MAX(id) FROM order_status_history WHERE order_id = o.id)
 		LEFT JOIN statuses s ON s.id = osh.status_id
-	`).Scan(
+		WHERE ($1 = '' OR o.created_at >= NULLIF($1,'')::date)
+		  AND ($2 = '' OR o.created_at < (NULLIF($2,'')::date + 1))
+	`, from, to).Scan(
 		&stats.TotalOrders,
 		&stats.MonthlyRevenue,
 		&stats.TotalRevenue,
@@ -38,8 +41,9 @@ func (r *AnalyticsRepository) GetAdminStats() (*models.AdminStats, error) {
 	return stats, err
 }
 
-// GetMonthlyRevenue — прибыль по месяцам (последние 12)
-func (r *AnalyticsRepository) GetMonthlyRevenue() ([]models.MonthlyRevenue, error) {
+// GetMonthlyRevenue — прибыль по месяцам.
+// Если from задан — за выбранный период, иначе за последние 12 месяцев.
+func (r *AnalyticsRepository) GetMonthlyRevenue(from, to string) ([]models.MonthlyRevenue, error) {
 	var result []models.MonthlyRevenue
 	err := r.db.Select(&result, `
 		SELECT
@@ -47,16 +51,18 @@ func (r *AnalyticsRepository) GetMonthlyRevenue() ([]models.MonthlyRevenue, erro
 			COALESCE(SUM(final_price), 0)                        AS revenue,
 			COUNT(*)                                             AS orders
 		FROM orders
-		WHERE created_at >= NOW() - INTERVAL '12 months'
-		  AND final_price IS NOT NULL
+		WHERE final_price IS NOT NULL
+		  AND ($1 = '' OR created_at >= NULLIF($1,'')::date)
+		  AND ($2 = '' OR created_at < (NULLIF($2,'')::date + 1))
+		  AND ($1 <> '' OR created_at >= NOW() - INTERVAL '12 months')
 		GROUP BY DATE_TRUNC('month', created_at)
 		ORDER BY month ASC
-	`)
+	`, from, to)
 	return result, err
 }
 
-// GetRevenueByUser — прибыль с каждого пользователя
-func (r *AnalyticsRepository) GetRevenueByUser() ([]models.UserRevenue, error) {
+// GetRevenueByUser — прибыль с каждого пользователя за период.
+func (r *AnalyticsRepository) GetRevenueByUser(from, to string) ([]models.UserRevenue, error) {
 	var result []models.UserRevenue
 	err := r.db.Select(&result, `
 		SELECT
@@ -67,8 +73,10 @@ func (r *AnalyticsRepository) GetRevenueByUser() ([]models.UserRevenue, error) {
 			COALESCE(SUM(o.final_price), 0)              AS revenue
 		FROM users u
 		JOIN orders o ON o.user_id = u.id
+		WHERE ($1 = '' OR o.created_at >= NULLIF($1,'')::date)
+		  AND ($2 = '' OR o.created_at < (NULLIF($2,'')::date + 1))
 		GROUP BY u.id, u.first_name, u.last_name, u.email
 		ORDER BY revenue DESC
-	`)
+	`, from, to)
 	return result, err
 }

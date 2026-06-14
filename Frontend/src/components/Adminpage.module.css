@@ -1060,3 +1060,7 @@
   .table td { padding: 9px 8px; }
   .table td:nth-child(2) { word-break: break-word; }
 }
+
+.photoGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.orderPhoto { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid var(--c-border, #1e2d45); cursor: pointer; transition: transform 0.15s; display: block; }
+.orderPhoto:hover { transform: scale(1.03); }

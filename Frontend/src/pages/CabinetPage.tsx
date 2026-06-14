@@ -34,7 +34,7 @@ const AVATAR_EMOJIS = ['👤','😊','😎','🤓','👩‍💻','👨‍💻','
 
 export default function CabinetPage() {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, setUser } = useAuthStore();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -122,7 +122,8 @@ export default function CabinetPage() {
   const saveProfile = async () => {
     setEditSaving(true); setEditError(''); setEditOk(false);
     try {
-      await authApi.updateProfile({ first_name: editFirst, last_name: editLast, phone: editPhone, email: editEmail });
+      const updated = await authApi.updateProfile({ first_name: editFirst, last_name: editLast, phone: editPhone, email: editEmail });
+      setUser(updated);
       setEditOk(true); setEditMode(false);
     } catch (e: any) {
       setEditError(e.response?.data?.error || 'Ошибка сохранения');

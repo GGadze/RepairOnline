@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
-import { adminApi, chatApi, orderServicesApi, slotsApi } from '../services/api'
+import { adminApi, chatApi, orderServicesApi, ordersApi, slotsApi, fileUrl } from '../services/api'
 import type {
   Order, Status, AdminStats, MonthlyRevenue, UserRevenue,
   ChatConversation, ChatMessage, OrderStatusHistory, Category, TimeSlot
@@ -93,6 +93,7 @@ export default function AdminPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [orderHistory, setOrderHistory] = useState<OrderStatusHistory[]>([])
   const [orderServices, setOrderServices] = useState<any[]>([])
+  const [orderPhotos, setOrderPhotos] = useState<any[]>([])
   const [statusComment, setStatusComment] = useState('')
   const [newStatusId, setNewStatusId] = useState<number>(0)
   const [ordersLoading, setOrdersLoading] = useState(false)
@@ -135,9 +136,9 @@ export default function AdminPage() {
     setStatsLoading(true)
     try {
       const [s, m, u] = await Promise.all([
-        adminApi.getStats(),
-        adminApi.getMonthlyRevenue(),
-        adminApi.getUserRevenue(),
+        adminApi.getStats(dateFrom, dateTo),
+        adminApi.getMonthlyRevenue(dateFrom, dateTo),
+        adminApi.getUserRevenue(dateFrom, dateTo),
       ])
       setStats(s)
       setMonthly(m || [])
@@ -180,7 +181,7 @@ export default function AdminPage() {
     } finally {
       setStatsLoading(false)
     }
-  }, [])
+  }, [dateFrom, dateTo])
 
   useEffect(() => {
     if (tab !== 'dashboard') return
@@ -256,13 +257,15 @@ export default function AdminPage() {
     setNewStatusId(0)
     setStatusComment('')
     try {
-      const [hist, svc] = await Promise.all([
+      const [hist, svc, pho] = await Promise.all([
         api.get(`/orders/${order.id}/history`),
         orderServicesApi.getServices(order.id),
+        ordersApi.getPhotos(order.id),
       ])
       setOrderHistory((hist as any).data || [])
       setOrderServices(svc || [])
-    } catch { setOrderHistory([]); setOrderServices([]) }
+      setOrderPhotos(pho || [])
+    } catch { setOrderHistory([]); setOrderServices([]); setOrderPhotos([]) }
   }
 
   // ── Update status ──
@@ -708,6 +711,19 @@ const exportToCSV = () => {
                   </div>
 
                   <div className={styles.detailSection}><div className={styles.detailSectionTitle}>Описание проблемы</div><div className={styles.detailText}>{selectedOrder.problem_description}</div></div>
+                  
+                  {orderPhotos.length > 0 && (
+                    <div className={styles.detailSection}>
+                      <div className={styles.detailSectionTitle}>Фотографии</div>
+                      <div className={styles.photoGrid}>
+                        {orderPhotos.map((p: any) => (
+                          <a key={p.id} href={fileUrl(p.file_path)} target="_blank" rel="noreferrer">
+                            <img src={fileUrl(p.file_path)} alt={p.file_name} className={styles.orderPhoto} />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
                   {orderServices.length > 0 && (
                     <div className={styles.detailSection}>

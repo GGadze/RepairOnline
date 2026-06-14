@@ -389,7 +389,7 @@ export default function CreateOrderPage() {
               </div>
               <div className={styles.stepButtons}>
                 <button className={styles.prevBtn} onClick={() => setCurrentStep(2)}>Назад</button>
-                <button className={styles.nextBtn} onClick={() => setCurrentStep(4)} disabled={selectedServices.length === 0}>Далее</button>
+                <button className={styles.nextBtn} onClick={() => setCurrentStep(4)} disabled={services.length > 0 && selectedServices.length === 0}>Далее</button>
               </div>
             </div>
           )}

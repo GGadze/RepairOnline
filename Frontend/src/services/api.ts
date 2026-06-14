@@ -41,6 +41,10 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// URL к статике (фото вне /api). Нормализуем слеши — на Windows путь приходит с "\"
+const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace(/\/api\/?$/, '');
+export const fileUrl = (p: string) => `${API_ORIGIN}/${p.replace(/\\/g, '/').replace(/^\//, '')}`;
+
 // =====================
 // AUTH
 // =====================
@@ -142,14 +146,14 @@ export const reviewsApi = {
 // ADMIN ANALYTICS
 // =====================
 export const adminApi = {
-  getStats: () =>
-    api.get<AdminStats>('/admin/stats').then(r => r.data),
+  getStats: (from?: string, to?: string) =>
+    api.get<AdminStats>('/admin/stats', { params: { from, to } }).then(r => r.data),
 
-  getMonthlyRevenue: () =>
-    api.get<MonthlyRevenue[]>('/admin/stats/monthly').then(r => r.data),
+  getMonthlyRevenue: (from?: string, to?: string) =>
+    api.get<MonthlyRevenue[]>('/admin/stats/monthly', { params: { from, to } }).then(r => r.data),
 
-  getUserRevenue: () =>
-    api.get<UserRevenue[]>('/admin/stats/users').then(r => r.data),
+  getUserRevenue: (from?: string, to?: string) =>
+    api.get<UserRevenue[]>('/admin/stats/users', { params: { from, to } }).then(r => r.data),
 };
 
 // =====================
