@@ -156,13 +156,12 @@ export default function HomePage() {
             */}
             <div className={s.heroPhoto}>
               <div className={s.heroPhotoInner}>
-
-                <span className={s.heroPhotoHint}>
-                  Сюда фото мастера<br/>
-                  <code>/public/images/master.jpg</code>
-                </span>
+                <img 
+                  src="/images/master.jpg" 
+                  alt="Мастер за работой"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
               </div>
-              {/* Плашки поверх фото */}
               <div className={s.heroPill1}>Гарантия до 1 года</div>
               <div className={s.heroPill2}>Ремонт в день обращения</div>
             </div>
@@ -290,11 +289,11 @@ export default function HomePage() {
                 src="/images/about.jpg" — горизонтальное, минимум 800×600px.
               */}
               <div className={s.aboutPhoto}>
-  
-                <span className={s.aboutPhotoHint}>
-                  Фото мастера за работой<br/>
-                  <code>/public/images/about.jpg</code>
-                </span>
+                <img 
+                  src="/images/about.jpg" 
+                  alt="Мастер ремонтирует автомобиль"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
               </div>
               <div className={s.aboutBadge}>7 лет опыта</div>
             </div>
