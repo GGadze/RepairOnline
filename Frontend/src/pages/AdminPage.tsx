@@ -6,7 +6,7 @@ import type {
   Order, Status, AdminStats, MonthlyRevenue, UserRevenue,
   ChatConversation, ChatMessage, OrderStatusHistory, Category, TimeSlot
 } from '../types'
-import styles from "../components/AdminPage.module.css"
+import styles from "../components/Adminpage.module.css"
 
 // ─── API helpers ───────────────────────────────────────────────────────────────
 const api = (await import('../services/api')).default
